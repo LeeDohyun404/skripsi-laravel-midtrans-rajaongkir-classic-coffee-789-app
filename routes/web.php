@@ -8,6 +8,7 @@ use App\Http\Controllers\OrderController;
 use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\RajaOngkirController;
+use App\Http\Controllers\GoogleAuthController;
 
 // =============================================
 // ✅ API RAJAONGKIR — WAJIB PALING ATAS
@@ -182,3 +183,6 @@ Route::middleware(['admin_auth'])->group(function () {
         }
     });
 });
+
+Route::get('auth/google', [GoogleAuthController::class, 'redirect']);
+Route::get('auth/google/callback', [GoogleAuthController::class, 'callback']);

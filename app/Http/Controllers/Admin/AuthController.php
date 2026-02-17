@@ -20,7 +20,7 @@ class AuthController extends Controller
             return redirect('/admin/history');
         }
 
-        return back()->with('error', 'Username atau Password salah, Bos!');
+        return back()->with('error', 'Username atau Password salah!');
     }
 
     public function logout() {

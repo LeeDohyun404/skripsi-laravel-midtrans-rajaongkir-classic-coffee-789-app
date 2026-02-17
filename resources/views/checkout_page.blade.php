@@ -328,7 +328,7 @@
     $(document).ready(function () {
         let searchTimeout = null;
 
-        // Autocomplete search destinasi
+       // Autocomplete search destinasi
         $('#destination_search').on('input', function () {
             let keyword = $(this).val().trim();
 
@@ -336,9 +336,22 @@
                 $('#destination_dropdown').addClass('hidden').html('');
                 $('#destination_id').val('');
                 $('#destination_selected').addClass('hidden').text('');
-                $('#kurir-container').addClass('hidden');
+                $('#kurir-container').addClass('hidden'); // ✅ sudah ada
+                
+                // ✅ TAMBAHKAN INI — reset ongkir kalau user ganti destinasi
+                $('#list-kurir').html('<p class="text-gray-400 text-sm">Pilih destinasi dulu untuk melihat layanan kurir...</p>');
+                ongkirValue = 0;
+                updateTotal();
+                
                 return;
             }
+
+            // ✅ TAMBAHKAN INI JUGA — reset saat mulai ngetik lagi
+            $('#kurir-container').addClass('hidden');
+            $('#destination_id').val('');
+            $('#destination_selected').addClass('hidden');
+            ongkirValue = 0;
+            updateTotal();
 
             clearTimeout(searchTimeout);
             searchTimeout = setTimeout(function () {
