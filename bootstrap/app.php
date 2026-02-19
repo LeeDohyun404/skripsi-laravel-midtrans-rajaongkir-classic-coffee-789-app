@@ -17,8 +17,13 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin_auth' => \App\Http\Middleware\AdminAuth::class,
         ]);
 
+        // ✅ TRUST ALL PROXIES (NGROK)
+        $middleware->trustProxies(at: '*');
+
+        // ✅ EXCLUDE EMAIL VERIFICATION & MIDTRANS DARI CSRF
         $middleware->validateCsrfTokens(except: [
-            'api/midtrans-callback'
+            'api/midtrans-callback',
+            'email/*',  // ✅ TAMBAH INI
         ]);
 
         $middleware->statefulApi(); 

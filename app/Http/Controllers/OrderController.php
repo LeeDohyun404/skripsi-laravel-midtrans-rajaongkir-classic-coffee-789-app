@@ -6,6 +6,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Notification;
+use App\Notifications\NewOrderNotification;
 use Midtrans\Config;
 use Midtrans\Snap;
 
@@ -22,15 +24,15 @@ class OrderController extends Controller
         // 2. Buat order ID unik
         $order_id = 'ORDER-' . time() . '-' . rand(100, 999);
 
-        // 3. Ambil data dari form — sesuai name di checkout_page.blade.php
-        $phone      = $request->phone;         // <-- fix: dari 'no_hp' ke 'phone'
-        $total      = (int) $request->total;   // <-- fix: dari 'total_price' ke 'total'
-        $address    = $request->address;       // <-- fix: dari 'alamat' ke 'address'
+        // 3. Ambil data dari form
+        $phone      = $request->phone;
+        $total      = (int) $request->total;
+        $address    = $request->address;
         $order_type = $request->order_type;
         $ongkir     = (int) $request->ongkir ?? 0;
         $service    = $request->courier_service ?? '';
 
-        // 4. Simpan ke database
+        // 4. Simpan ke database dengan status pending
         DB::table('orders')->insert([
             'number'         => $order_id,
             'total_price'    => $total,
@@ -59,7 +61,6 @@ class OrderController extends Controller
             ],
         ];
 
-        // Tambah shipping address kalau take-away
         if ($order_type === 'take-away' && $address) {
             $params['customer_details']['shipping_address'] = [
                 'first_name'   => Auth::user()->name,
@@ -78,6 +79,25 @@ class OrderController extends Controller
         }
     }
 
+    /**
+     * ✅ KIRIM NOTIFIKASI EMAIL SAJA
+     */
+    private function sendNotifications($orderId, $customerName, $total, $orderType, $phone)
+    {
+        // Kirim Email
+        try {
+            $adminEmail = env('ADMIN_EMAIL', 'admin@classic789.com');
+            Notification::route('mail', $adminEmail)
+                ->notify(new NewOrderNotification($orderId, $customerName, $total, $orderType, $phone));
+            Log::info('✅ Email sent for order: ' . $orderId);
+        } catch (\Exception $e) {
+            Log::error('❌ Email failed: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * ✅ MIDTRANS CALLBACK - KIRIM NOTIF EMAIL SAAT PEMBAYARAN BERHASIL
+     */
     public function notificationHandler(Request $request)
     {
         $payload  = json_decode($request->getContent(), true);
@@ -91,13 +111,28 @@ class OrderController extends Controller
         }
 
         if (in_array($status, ['settlement', 'capture'])) {
+            // Update status jadi success
             DB::table('orders')
                 ->where('number', $order_id)
                 ->update([
                     'status'     => 'success',
                     'updated_at' => now(),
                 ]);
+
+            // ✅ KIRIM NOTIF EMAIL (HANYA SAAT PEMBAYARAN BERHASIL)
+            $order = DB::table('orders')->where('number', $order_id)->first();
+            if ($order) {
+                $this->sendNotifications(
+                    $order->number,
+                    $order->customer_name,
+                    $order->total_price,
+                    $order->order_type,
+                    $order->customer_phone
+                );
+            }
+
         } elseif (in_array($status, ['cancel', 'deny', 'expire'])) {
+            // Update status jadi cancelled (TIDAK KIRIM NOTIF)
             DB::table('orders')
                 ->where('number', $order_id)
                 ->update([

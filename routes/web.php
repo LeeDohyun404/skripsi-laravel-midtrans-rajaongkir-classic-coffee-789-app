@@ -65,7 +65,7 @@ Route::get('/service', function () { return view('service'); });
 // =============================================
 // AUTH
 // =============================================
-Auth::routes();
+Auth::routes(['verify' => true]);
 
 Route::get('/home', function () {
     return redirect('/produk');
@@ -74,8 +74,8 @@ Route::get('/home', function () {
 // =============================================
 // CHECKOUT
 // =============================================
-Route::get('/checkout_page', [RajaOngkirController::class, 'checkout'])->middleware('auth');
-Route::post('/payment/process', [OrderController::class, 'checkout'])->name('payment.process');
+Route::get('/checkout_page', [RajaOngkirController::class, 'checkout'])->middleware(['auth', 'verified']);
+Route::post('/payment/process', [OrderController::class, 'checkout'])->name('payment.process')->middleware(['auth', 'verified']);
 
 // =============================================
 // CART
