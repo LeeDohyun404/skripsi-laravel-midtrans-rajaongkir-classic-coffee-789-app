@@ -25,34 +25,81 @@ class OrderController extends Controller
         $order_id = 'ORDER-' . time() . '-' . rand(100, 999);
 
         // 3. Ambil data dari form
-        $phone      = $request->phone;
-        $total      = (int) $request->total;
-        $address    = $request->address;
-        $order_type = $request->order_type;
-        $ongkir     = (int) $request->ongkir ?? 0;
-        $service    = $request->courier_service ?? '';
+        $phone        = $request->phone;
+        $total        = (int) $request->total;
+        $subtotal     = (int) $request->subtotal;
+        $address      = $request->address;
+        $order_type   = $request->order_type;
+        $ongkir       = (int) ($request->ongkir ?? 0);
+        $courierSvc   = $request->courier_service ?? null;
+        $courierName  = $request->courier_name ?? null;
 
-        // 4. Simpan ke database dengan status pending
-        DB::table('orders')->insert([
-            'number'         => $order_id,
-            'total_price'    => $total,
-            'status'         => 'pending',
-            'customer_name'  => Auth::user()->name,
-            'customer_email' => Auth::user()->email,
-            'customer_phone' => $phone,
-            'order_type'     => $order_type,
-            'address'        => $address,
-            'notes'          => $request->notes ?? null,
-            'created_at'     => now(),
-            'updated_at'     => now(),
+        // 4. Ambil cart dari session
+        $cart = session()->get('cart', []);
+
+        // 5. Simpan ke tabel orders
+        $orderId = DB::table('orders')->insertGetId([
+            'number'          => $order_id,
+            'total_price'     => $total,
+            'subtotal'        => $subtotal,
+            'quantity'        => array_sum(array_column($cart, 'quantity')),
+            'status'          => 'pending',
+            'customer_name'   => Auth::user()->name,
+            'customer_email'  => Auth::user()->email,
+            'customer_phone'  => $phone,
+            'order_type'      => $order_type,
+            'courier_name'    => $courierName,
+            'courier_service' => $courierSvc,
+            'ongkir'          => $ongkir,
+            'address'         => $address,
+            'notes'           => $request->notes ?? null,
+            'created_at'      => now(),
+            'updated_at'      => now(),
         ]);
 
-        // 5. Kirim ke Midtrans
+        // 6. Simpan detail item ke order_items
+        foreach ($cart as $productId => $item) {
+            DB::table('order_items')->insert([
+                'order_id'      => $orderId,
+                'product_id'    => is_numeric($productId) ? (int) $productId : null,
+                'product_name'  => $item['name'],
+                'product_image' => $item['image'] ?? null,
+                'price'         => (int) $item['price'],
+                'quantity'      => (int) $item['quantity'],
+                'subtotal'      => (int) $item['price'] * (int) $item['quantity'],
+                'created_at'    => now(),
+                'updated_at'    => now(),
+            ]);
+        }
+
+        // 7. Kirim ke Midtrans
+        // Build item_details dari cart
+        $itemDetails = [];
+        foreach ($cart as $item) {
+            $itemDetails[] = [
+                'id'       => 'prod-' . ($item['name'] ?? 'item'),
+                'price'    => (int) $item['price'],
+                'quantity' => (int) $item['quantity'],
+                'name'     => substr($item['name'], 0, 50), // Midtrans max 50 char
+            ];
+        }
+
+        // Tambahkan ongkir sebagai item jika ada
+        if ($ongkir > 0) {
+            $itemDetails[] = [
+                'id'       => 'ongkir',
+                'price'    => $ongkir,
+                'quantity' => 1,
+                'name'     => 'Ongkos Kirim (' . $courierName . ' ' . $courierSvc . ')',
+            ];
+        }
+
         $params = [
             'transaction_details' => [
                 'order_id'     => $order_id,
                 'gross_amount' => $total,
             ],
+            'item_details'     => $itemDetails,
             'notification_url' => env('APP_URL') . '/api/midtrans-callback',
             'customer_details' => [
                 'first_name' => Auth::user()->name,
@@ -72,6 +119,10 @@ class OrderController extends Controller
 
         try {
             $snapToken = Snap::getSnapToken($params);
+
+            // Kosongkan cart setelah order berhasil dibuat
+            session()->forget('cart');
+
             return view('checkout', compact('snapToken', 'order_id'));
         } catch (\Exception $e) {
             Log::error('Midtrans error: ' . $e->getMessage());
@@ -80,11 +131,10 @@ class OrderController extends Controller
     }
 
     /**
-     * ✅ KIRIM NOTIFIKASI EMAIL SAJA
+     * Kirim notifikasi email
      */
     private function sendNotifications($orderId, $customerName, $total, $orderType, $phone)
     {
-        // Kirim Email
         try {
             $adminEmail = env('ADMIN_EMAIL', 'admin@classic789.com');
             Notification::route('mail', $adminEmail)
@@ -96,7 +146,7 @@ class OrderController extends Controller
     }
 
     /**
-     * ✅ MIDTRANS CALLBACK - KIRIM NOTIF EMAIL SAAT PEMBAYARAN BERHASIL
+     * Midtrans callback
      */
     public function notificationHandler(Request $request)
     {
@@ -111,15 +161,10 @@ class OrderController extends Controller
         }
 
         if (in_array($status, ['settlement', 'capture'])) {
-            // Update status jadi success
             DB::table('orders')
                 ->where('number', $order_id)
-                ->update([
-                    'status'     => 'success',
-                    'updated_at' => now(),
-                ]);
+                ->update(['status' => 'success', 'updated_at' => now()]);
 
-            // ✅ KIRIM NOTIF EMAIL (HANYA SAAT PEMBAYARAN BERHASIL)
             $order = DB::table('orders')->where('number', $order_id)->first();
             if ($order) {
                 $this->sendNotifications(
@@ -132,13 +177,9 @@ class OrderController extends Controller
             }
 
         } elseif (in_array($status, ['cancel', 'deny', 'expire'])) {
-            // Update status jadi cancelled (TIDAK KIRIM NOTIF)
             DB::table('orders')
                 ->where('number', $order_id)
-                ->update([
-                    'status'     => 'cancelled',
-                    'updated_at' => now(),
-                ]);
+                ->update(['status' => 'cancelled', 'updated_at' => now()]);
         }
 
         return response()->json(['status' => 'OK']);

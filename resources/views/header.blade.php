@@ -29,11 +29,9 @@
         
      <ul class="absolute left-0 mt-2 w-48 bg-white border border-stone-100 shadow-xl rounded-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50 py-2 normal-case tracking-normal">
     
-    <li><a href="/produk/paket" class="block px-4 py-2 hover:bg-amber-50 hover:text-amber-700 transition">Semua Paket</a></li>
-
-    <li><a href="/produk/makanan" class="block px-4 py-2 hover:bg-amber-50 hover:text-amber-700 transition">Makanan</a></li>
-
-    <li><a href="/produk/minuman" class="block px-4 py-2 hover:bg-amber-50 hover:text-amber-700 transition">Semua Minuman</a></li>
+    <li><a href="/produk" class="block px-4 py-2 hover:bg-amber-50 hover:text-amber-700 transition">Semua Produk</a></li>
+    <li><a href="/produk/Makanan" class="block px-4 py-2 hover:bg-amber-50 hover:text-amber-700 transition">Makanan</a></li>
+    <li><a href="/produk/Minuman" class="block px-4 py-2 hover:bg-amber-50 hover:text-amber-700 transition">Minuman</a></li>
 
 </ul>
     </li>

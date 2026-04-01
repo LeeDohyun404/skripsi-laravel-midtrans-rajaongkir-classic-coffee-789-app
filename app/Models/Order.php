@@ -11,4 +11,5 @@ class Order extends Model
         'user_id', 'nama', 'no_hp', 'alamat', 
         'total_price', 'order_type', 'status', 'snap_token'
     ];
+    
 }

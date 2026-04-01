@@ -9,6 +9,8 @@ use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\RajaOngkirController;
 use App\Http\Controllers\GoogleAuthController;
+use App\Http\Controllers\Auth\KaryawanLoginController;
+use App\Http\Controllers\KasirController;
 
 // =============================================
 // ✅ API RAJAONGKIR — WAJIB PALING ATAS
@@ -186,3 +188,38 @@ Route::middleware(['admin_auth'])->group(function () {
 
 Route::get('auth/google', [GoogleAuthController::class, 'redirect']);
 Route::get('auth/google/callback', [GoogleAuthController::class, 'callback']);
+
+Route::get('/login-staff', [KaryawanLoginController::class, 'showLoginForm'])->name('staff.login');
+Route::post('/login-staff', [KaryawanLoginController::class, 'login']);
+
+Route::middleware(['auth:staff'])->group(function () {
+    // Resourceful style biar rapi
+    Route::get('/admin/karyawan', [KaryawanLoginController::class, 'index'])->name('admin.karyawan.index');
+    Route::get('/admin/karyawan/tambah', [KaryawanLoginController::class, 'create'])->name('admin.karyawan.tambah');
+    Route::post('/admin/karyawan/simpan', [KaryawanLoginController::class, 'store'])->name('admin.karyawan.store');
+    Route::get('/admin/karyawan/{id}/edit', [KaryawanLoginController::class, 'edit'])->name('admin.karyawan.edit');
+    Route::put('/admin/karyawan/{id}', [KaryawanLoginController::class, 'update'])->name('admin.karyawan.update');
+    Route::delete('/admin/karyawan/{id}', [KaryawanLoginController::class, 'destroy'])->name('admin.karyawan.destroy');
+    
+    Route::post('/logout-staff', [KaryawanLoginController::class, 'logout'])->name('staff.logout');
+});
+
+// =============================================
+// Tambahkan ini di web.php, di dalam:
+// Route::middleware(['auth:staff'])->group(function () { ... });
+// =============================================
+
+// --- OPERATOR ---
+Route::get('/operator/stok', [App\Http\Controllers\OperatorController::class, 'stok'])->name('operator.stok');
+Route::post('/operator/produk/simpan', [App\Http\Controllers\OperatorController::class, 'storeProduk'])->name('operator.produk.store');
+Route::put('/operator/produk/update', [App\Http\Controllers\OperatorController::class, 'updateProduk'])->name('operator.produk.update');
+Route::post('/operator/stok/update', [App\Http\Controllers\OperatorController::class, 'updateStok'])->name('operator.stok.update');
+
+// --- KASIR ---
+Route::get('/kasir/transaksi', [App\Http\Controllers\KasirController::class, 'transaksi'])->name('kasir.transaksi');
+Route::put('/kasir/pesanan/{id}', [App\Http\Controllers\KasirController::class, 'updatePesanan'])->name('kasir.pesanan.update');
+Route::delete('/operator/produk/{id}', [App\Http\Controllers\OperatorController::class, 'destroyProduk'])->name('operator.produk.hapus');
+Route::get('/admin/stok', [AdminController::class, 'stok'])->name('admin.stok');
+Route::delete('/admin/pelanggan/{id}/hapus', [AdminController::class, 'destroyPelanggan'])->name('admin.pelanggan.hapus');
+Route::get('/kasir/detail-pelanggan', [KasirController::class, 'detailPelanggan'])
+     ->name('kasir.detail.pelanggan');

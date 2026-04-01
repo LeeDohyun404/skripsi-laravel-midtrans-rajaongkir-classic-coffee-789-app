@@ -1,122 +1,90 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>History Transaksi - Classic 789</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-</head>
-<body class="bg-stone-100 font-sans overflow-x-hidden">
-    <nav class="bg-stone-900 text-white py-4 px-8 sticky top-0 z-50 shadow-2xl">
-        <div class="max-w-[1600px] mx-auto flex justify-between items-center">
-            <div class="flex items-center gap-4">
-                <i class="fas fa-coffee text-amber-500 text-2xl"></i>
-                <h1 class="font-bold text-lg tracking-tighter uppercase">Admin <span class="text-amber-500">Classic 789</span></h1>
-            </div>
-            <div class="flex gap-6 text-[10px] font-black uppercase tracking-widest">
-                <a href="/admin" class="hover:text-amber-500 transition">Kelola Produk</a>
-                <a href="/admin/history" class="text-amber-500 border-b-2 border-amber-500 pb-1">History Transaksi</a>
-                 <a href="/admin/pelanggan" class="text-[10px] font-black uppercase tracking-widest text-stone-400 hover:text-white transition pb-1">
-                    <i class="fas fa-users mr-1"></i> Kelola Pelanggan
-                </a>
-                <a href="/produk" target="_blank" class="hover:text-amber-500 transition">Lihat Toko</a>
-            </div>
-        </div>
-    </nav>
+{{-- resources/views/admin/history.blade.php --}}
+@extends('layouts.app')
+@section('title', 'History Pesanan')
+@section('content')
 
-    <div class="max-w-[1600px] mx-auto px-4 lg:px-8 py-8">
-        
-        <div class="bg-white rounded-[2rem] shadow-2xl border border-stone-200 overflow-hidden">
-            <div class="p-6 border-b border-stone-100 bg-stone-50/50 flex justify-between items-center">
-                <h3 class="text-sm font-black uppercase tracking-widest text-stone-500">Riwayat Pesanan Masuk</h3>
-                <span class="text-[10px] text-stone-400">Total: {{ count($orders) }} Transaksi</span>
-            </div>
-            
-            <div class="overflow-x-auto">
-                <div class="overflow-x-auto">
-             <table class="w-full text-left border-collapse">
-                <thead class="bg-stone-900 text-white text-[10px] uppercase font-black tracking-widest">
-                    <tr>
-                        <th class="px-6 py-4">Order ID & Waktu</th>
-                        <th class="px-6 py-4">Detail Produk</th>
-                        <th class="px-6 py-4">Pelanggan</th>
-                        <th class="px-6 py-4">Pengambilan & Alamat</th>
-                        <th class="px-6 py-4">Total & Bayar</th>
-                        <th class="px-6 py-4 text-center">Status</th>
-                    </tr>
-                </thead>
-            <tbody class="divide-y divide-stone-200 bg-white">
-                @foreach($orders as $o)
-                <tr class="hover:bg-amber-50/50 transition-all border-b border-stone-100">
-                    <td class="px-6 py-4">
-                        <span class="block font-black text-amber-600">#{{ substr($o->number, -8) }}</span>
-                        <span class="text-[10px] text-stone-400 font-bold italic uppercase">
-                            <i class="far fa-clock mr-1"></i>{{ \Carbon\Carbon::parse($o->created_at)->format('d M, H:i') }}
-                        </span>
-                    </td>
+{{-- Navbar Staff --}}
+<nav class="mb-4 py-3 px-4 d-flex align-items-center justify-content-between" style="background:#1c1917;">
+    <span class="fw-black text-white fs-5">
+        <i class="bi bi-cup-hot-fill text-warning me-2"></i>
+        CLASSIC<span class="text-warning">789</span> Staff
+    </span>
+    <div class="d-flex align-items-center gap-2">
+        <a class="px-3 py-2 rounded-3 text-decoration-none fw-semibold small {{ request()->is('admin/karyawan*') ? 'bg-warning text-dark' : 'text-white' }}"
+           href="/admin/karyawan"><i class="bi bi-people-fill me-1"></i> Kelola Karyawan</a>
+        <a class="px-3 py-2 rounded-3 text-decoration-none fw-semibold small {{ request()->is('admin/pelanggan') ? 'bg-warning text-dark' : 'text-white' }}"
+           href="/admin/pelanggan"><i class="bi bi-person-lines-fill me-1"></i> Kelola Pelanggan</a>
+        <a class="px-3 py-2 rounded-3 text-decoration-none fw-semibold small {{ request()->is('admin/history') ? 'bg-warning text-dark' : 'text-white' }}"
+           href="/admin/history"><i class="bi bi-clock-history me-1"></i> History Pesanan</a>
+        <a class="px-3 py-2 rounded-3 text-decoration-none fw-semibold small {{ request()->is('admin/stok') ? 'bg-warning text-dark' : 'text-white' }}"
+           href="/admin/stok"><i class="bi bi-box-seam me-1"></i> Lihat Stok Produk</a>
+        <form method="POST" action="{{ route('staff.logout') }}" class="d-inline ms-2">
+            @csrf
+            <button type="submit" class="btn btn-sm btn-outline-warning">
+                <i class="bi bi-box-arrow-right me-1"></i> Logout
+            </button>
+        </form>
+    </div>
+</nav>
 
-                    <td class="px-6 py-4">
-                        <div class="text-sm">
-                            <span class="font-bold text-stone-800 block italic">Pesanan Kopi</span>
-                            <span class="inline-block bg-stone-900 text-white px-2 py-0.5 rounded text-[10px] font-black mt-1">
-                                <i class="fas fa-box mr-1 text-amber-500"></i> {{ $o->quantity ?? '1' }} ITEM
-                            </span>
-                        </div>
-                    </td>
 
-                    <td class="px-6 py-4">
-                        <div class="flex flex-col gap-1">
-                            <span class="font-black text-stone-800 text-sm">{{ $o->customer_name }}</span>
-                            <span class="text-[10px] text-green-600 font-bold flex items-center">
-                                <i class="fab fa-whatsapp mr-1"></i> {{ $o->customer_phone }}
-                            </span>
-                            <span class="text-[10px] text-stone-400 font-medium flex items-center">
-                                <i class="far fa-envelope mr-1"></i> {{ $o->customer_email }}
-                            </span>
-                        </div>
-                    </td>
+<div class="container-fluid px-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="fw-bold mb-0"><i class="bi bi-clock-history me-2 text-primary"></i>History Pesanan</h4>
+        <span class="text-muted small">Total: {{ count($orders) }} Transaksi</span>
+    </div>
 
-                    <td class="px-6 py-4">
-                    <div class="mb-2">
-                        {{-- Kita tambah ?? '' biar kalau datanya kosong gak bikin error 500 --}}
-                        @if(($o->order_type ?? '') == 'dine-in')
-                            <span class="px-2 py-1 rounded-md text-[9px] font-black uppercase bg-blue-100 text-blue-700 border border-blue-200">
-                                <i class="fas fa-chair mr-1"></i> MAKAN DI SINI
-                            </span>
-                        @else
-                            <span class="px-2 py-1 rounded-md text-[9px] font-black uppercase bg-orange-100 text-orange-700 border border-orange-200">
-                                <i class="fas fa-motorcycle mr-1"></i> BAWA PULANG
-                            </span>
-                        @endif
-                    </div>
-                    
-                    {{-- Logic Alamat: kalau dine-in tulis 'Meja', kalau take-away tulis alamatnya --}}
-                    <p class="text-[10px] text-stone-600 leading-tight mb-1">
-                        <i class="fas fa-map-marker-alt text-red-500 mr-1"></i> 
-                        {{ ($o->order_type ?? '') == 'dine-in' ? 'Pesanan di Tempat' : ($o->address ?? 'Alamat tidak diisi') }}
-                    </p>
-
-                    @if($o->notes)
-                        <p class="text-[9px] text-amber-700 italic border-l-2 border-amber-300 pl-2">
-                            "{{ $o->notes }}"
-                        </p>
-                    @endif
-                </td>
-
-                    <td class="px-6 py-4 font-black text-stone-800">Rp {{ number_format($o->total_price) }}</td>
-                    <td class="px-6 py-4 text-center">
-                        <span class="px-3 py-1 rounded-full text-[9px] font-black uppercase {{ in_array($o->status, ['success','settlement','capture']) ? 'bg-green-500 text-white' : 'bg-amber-400 text-stone-900' }}">
-                            {{ $o->status }}
-                        </span>
-                    </td>
-                </tr>
-                @endforeach
-            </tbody>
-            </table>
-        </div>
+    <div class="card shadow-sm">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Order ID & Waktu</th>
+                            <th>Pelanggan</th>
+                            <th>Tipe</th>
+                            <th>Alamat / Catatan</th>
+                            <th>Total</th>
+                            <th class="text-center">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($orders as $o)
+                        <tr>
+                            <td>
+                                <span class="fw-bold text-warning d-block">#{{ substr($o->number, -8) }}</span>
+                                <small class="text-muted">{{ \Carbon\Carbon::parse($o->created_at)->format('d M Y, H:i') }}</small>
+                            </td>
+                            <td>
+                                <span class="fw-bold d-block">{{ $o->customer_name }}</span>
+                                <small class="text-success"><i class="bi bi-whatsapp me-1"></i>{{ $o->customer_phone }}</small><br>
+                                <small class="text-muted">{{ $o->customer_email }}</small>
+                            </td>
+                            <td>
+                                @if(($o->order_type ?? '') == 'dine-in')
+                                    <span class="badge bg-primary">Makan di Sini</span>
+                                @else
+                                    <span class="badge bg-warning text-dark">Bawa Pulang</span>
+                                @endif
+                            </td>
+                            <td>
+                                <small class="text-muted">{{ ($o->order_type ?? '') == 'dine-in' ? 'Pesanan di Tempat' : ($o->address ?? '-') }}</small>
+                                @if($o->notes)
+                                    <br><small class="text-warning fst-italic">"{{ $o->notes }}"</small>
+                                @endif
+                            </td>
+                            <td class="fw-bold">Rp {{ number_format($o->total_price) }}</td>
+                            <td class="text-center">
+                                <span class="badge {{ in_array($o->status, ['success','settlement','capture','completed']) ? 'bg-success' : 'bg-warning text-dark' }}">
+                                    {{ $o->status }}
+                                </span>
+                            </td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
-</body>
-</html>
+</div>
+@endsection
