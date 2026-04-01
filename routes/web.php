@@ -223,3 +223,4 @@ Route::get('/admin/stok', [AdminController::class, 'stok'])->name('admin.stok');
 Route::delete('/admin/pelanggan/{id}/hapus', [AdminController::class, 'destroyPelanggan'])->name('admin.pelanggan.hapus');
 Route::get('/kasir/detail-pelanggan', [KasirController::class, 'detailPelanggan'])
      ->name('kasir.detail.pelanggan');
+Route::get('/struk/{id}', [App\Http\Controllers\OrderController::class, 'struk'])->name('struk')->middleware('auth');

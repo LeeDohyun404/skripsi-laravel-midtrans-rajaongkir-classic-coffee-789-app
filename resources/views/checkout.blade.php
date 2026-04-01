@@ -26,9 +26,7 @@
         // Trigger Pop-up Midtrans
         window.snap.pay('{{ $snapToken }}', {
             onSuccess: function(result){
-                alert("Pembayaran Berhasil, Kopi segera diproses!");
-                console.log(result);
-                window.location.href = '/produk'; // Ganti ke dashboard user nanti
+                window.location.href = '/struk/{{ $orderId }}';
             },
             onPending: function(result){
                 alert("Menunggu pembayaran Anda...");

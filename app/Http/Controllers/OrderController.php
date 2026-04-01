@@ -73,18 +73,16 @@ class OrderController extends Controller
         }
 
         // 7. Kirim ke Midtrans
-        // Build item_details dari cart
         $itemDetails = [];
         foreach ($cart as $item) {
             $itemDetails[] = [
                 'id'       => 'prod-' . ($item['name'] ?? 'item'),
                 'price'    => (int) $item['price'],
                 'quantity' => (int) $item['quantity'],
-                'name'     => substr($item['name'], 0, 50), // Midtrans max 50 char
+                'name'     => substr($item['name'], 0, 50),
             ];
         }
 
-        // Tambahkan ongkir sebagai item jika ada
         if ($ongkir > 0) {
             $itemDetails[] = [
                 'id'       => 'ongkir',
@@ -123,7 +121,11 @@ class OrderController extends Controller
             // Kosongkan cart setelah order berhasil dibuat
             session()->forget('cart');
 
-            return view('checkout', compact('snapToken', 'order_id'));
+            // Ambil object order untuk dikirim ke view
+            $order = DB::table('orders')->where('id', $orderId)->first();
+
+            return view('checkout', compact('snapToken', 'order_id', 'order', 'orderId'));
+
         } catch (\Exception $e) {
             Log::error('Midtrans error: ' . $e->getMessage());
             return back()->with('error', 'Gagal memproses pembayaran: ' . $e->getMessage());
@@ -183,5 +185,23 @@ class OrderController extends Controller
         }
 
         return response()->json(['status' => 'OK']);
+    }
+
+    /**
+     * Tampilkan struk
+     */
+    public function struk($orderId)
+    {
+        $order = DB::table('orders')->where('id', $orderId)->first();
+
+        if (!$order) {
+            abort(404, 'Order tidak ditemukan.');
+        }
+
+        $items = DB::table('order_items')->where('order_id', $orderId)->get();
+
+        $nomorAntrian = str_pad($order->id % 100, 2, '0', STR_PAD_LEFT);
+
+        return view('struk', compact('order', 'items', 'nomorAntrian'));
     }
 }
