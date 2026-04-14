@@ -53,6 +53,26 @@ class Karyawan extends Authenticatable
         return $this->peran === 'kasir';
     }
 
+    // ── Helper Status ─────────────────────────────────────────────────
+
+    /**
+     * Cek apakah karyawan sudah aktif (is_aktif = true & password sudah diset).
+     */
+    public function sudahAktif(): bool
+    {
+        return (bool) $this->is_aktif && !empty($this->password);
+    }
+
+    /**
+     * Cek apakah undangan masih valid (belum aktif tapi password belum diset).
+     * Karena tabel tidak punya kolom aktivasi_token/expired_at,
+     * "diundang" = belum aktif tapi sudah punya email.
+     */
+    public function tokenMasihValid(): bool
+    {
+        return !(bool) $this->is_aktif && !empty($this->email) && empty($this->password);
+    }
+
     // ── Scope ─────────────────────────────────────────────────────────
 
     public function scopeAktif($query)

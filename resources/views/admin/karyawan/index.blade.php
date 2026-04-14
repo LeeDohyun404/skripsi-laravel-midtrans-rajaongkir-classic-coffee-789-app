@@ -1,194 +1,207 @@
-{{-- resources/views/admin/karyawan/index.blade.php --}}
-@extends('layouts.app')
+@extends('layouts.karyawan')
 
 @section('title', 'Manajemen Karyawan')
+@section('page-title', 'Manajemen Karyawan')
+
+@section('sidebar-nav')
+    <span class="nav-section-label">Menu Utama</span>
+    <a href="{{ route('admin.dashboard') }}" class="nav-item">
+        <span class="nav-icon">🏠</span> Dashboard
+    </a>
+
+    <span class="nav-section-label">Manajemen</span>
+    <a href="{{ route('admin.karyawan.index') }}" class="nav-item active">
+        <span class="nav-icon">👥</span> Karyawan
+    </a>
+    <a href="{{ route('admin.pelanggan') }}" class="nav-item">
+        <span class="nav-icon">🧑‍🤝‍🧑</span> Pelanggan
+    </a>
+    <a href="{{ route('admin.stok') }}" class="nav-item">
+        <span class="nav-icon">📦</span> Stok
+    </a>
+    <a href="{{ route('admin.history') }}" class="nav-item">
+        <span class="nav-icon">📋</span> History Transaksi
+    </a>
+@endsection
 
 @section('content')
 
-{{-- Navbar Staff (sama persis strukturnya dengan pelanggan.blade.php) --}}
-<nav class="mb-4 py-3 px-4 d-flex align-items-center justify-content-between" style="background:#1c1917;">
-    <span class="fw-black text-white fs-5">
-        <i class="bi bi-cup-hot-fill text-warning me-2"></i>
-        CLASSIC<span class="text-warning">789</span> Staff
-    </span>
-    <div class="d-flex align-items-center gap-2">
-        <a class="px-3 py-2 rounded-3 text-decoration-none fw-semibold small {{ request()->is('admin/karyawan*') ? 'bg-warning text-dark' : 'text-white' }}"
-           href="/admin/karyawan">
-            <i class="bi bi-people-fill me-1"></i> Kelola Karyawan
+@if (session('warning'))
+    <div class="card" style="margin-bottom:16px;border-left:4px solid #d4a017;">
+        <div style="padding:16px 20px;">
+            <div style="font-weight:600;color:#7a5c00;margin-bottom:8px;">⚠️ {{ session('warning') }}</div>
+
+            @if (session('manual_activation_url'))
+                <div style="font-size:13px;color:var(--text-muted);margin-bottom:10px;">
+                    Email otomatis gagal, tetapi link aktivasi manual sudah dibuat dan masih bisa dipakai.
+                </div>
+
+                <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+                    <input
+                        type="text"
+                        value="{{ session('manual_activation_url') }}"
+                        id="manualActivationUrl"
+                        readonly
+                        style="flex:1;min-width:280px;padding:10px 12px;border:1.5px solid var(--cream-dark);border-radius:8px;font-size:12px;background:#fff;"
+                    >
+                    <button
+                        type="button"
+                        class="btn btn-outline btn-sm"
+                        onclick="copyManualActivationUrl()">
+                        Salin Link
+                    </button>
+                    <a
+                        href="{{ session('manual_activation_url') }}"
+                        target="_blank"
+                        rel="noopener"
+                        class="btn btn-primary btn-sm">
+                        Buka Link
+                    </a>
+                </div>
+            @endif
+        </div>
+    </div>
+@endif
+
+<div class="card">
+    <div class="card-header">
+        <h2>Daftar Karyawan</h2>
+        <a href="{{ route('admin.karyawan.tambah') }}" class="btn btn-primary">
+            + Tambah Karyawan
         </a>
-        <a class="px-3 py-2 rounded-3 text-decoration-none fw-semibold small {{ request()->is('admin/pelanggan*') ? 'bg-warning text-dark' : 'text-white' }}"
-           href="/admin/pelanggan">
-            <i class="bi bi-person-lines-fill me-1"></i> Kelola Pelanggan
-        </a>
-        <a class="px-3 py-2 rounded-3 text-decoration-none fw-semibold small {{ request()->is('admin/history') ? 'bg-warning text-dark' : 'text-white' }}"
-           href="/admin/history">
-            <i class="bi bi-clock-history me-1"></i> History Pesanan
-        </a>
-        <a class="px-3 py-2 rounded-3 text-decoration-none fw-semibold small text-white"
-           href="/operator/stok">
-            <i class="bi bi-box-seam me-1"></i> Lihat Stok Produk
-        </a>
-        <form method="POST" action="{{ route('staff.logout') }}" class="d-inline ms-2">
-            @csrf
-            <button type="submit" class="btn btn-sm btn-outline-warning">
-                <i class="bi bi-box-arrow-right me-1"></i> Logout
-            </button>
+    </div>
+
+    {{-- Filter bar --}}
+    <div style="padding:16px 24px;border-bottom:1px solid var(--cream-dark);display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+        <form method="GET" action="{{ route('admin.karyawan.index') }}" style="display:flex;gap:10px;flex-wrap:wrap;width:100%;">
+            <input
+                type="text"
+                name="search"
+                value="{{ request('search') }}"
+                placeholder="Cari nama atau email..."
+                style="flex:1;min-width:200px;padding:8px 14px;border:1.5px solid var(--cream-dark);border-radius:8px;font-size:13px;font-family:'DM Sans',sans-serif;outline:none;"
+            >
+            <select name="peran" style="padding:8px 14px;border:1.5px solid var(--cream-dark);border-radius:8px;font-size:13px;font-family:'DM Sans',sans-serif;outline:none;color:var(--text);">
+                <option value="">Semua Peran</option>
+                <option value="admin"    {{ request('peran') === 'admin'    ? 'selected' : '' }}>Admin</option>
+                <option value="operator" {{ request('peran') === 'operator' ? 'selected' : '' }}>Operator</option>
+                <option value="kasir"    {{ request('peran') === 'kasir'    ? 'selected' : '' }}>Kasir</option>
+            </select>
+            <select name="status" style="padding:8px 14px;border:1.5px solid var(--cream-dark);border-radius:8px;font-size:13px;font-family:'DM Sans',sans-serif;outline:none;color:var(--text);">
+                <option value="">Semua Status</option>
+                <option value="aktif"       {{ request('status') === 'aktif'       ? 'selected' : '' }}>Aktif</option>
+                <option value="belum_aktif" {{ request('status') === 'belum_aktif' ? 'selected' : '' }}>Belum Aktivasi</option>
+            </select>
+            <button type="submit" class="btn btn-outline">Filter</button>
+            @if (request()->hasAny(['search','peran','status']))
+                <a href="{{ route('admin.karyawan.index') }}" class="btn btn-outline">Reset</a>
+            @endif
         </form>
     </div>
-</nav>
 
-<div class="container-fluid px-4">
+    <div style="padding:0;">
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Nama</th>
+                    <th>Email</th>
+                    <th>Peran</th>
+                    <th>Status Aktivasi</th>
+                    <th>Bergabung</th>
+                    <th style="text-align:right;">Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse ($karyawan as $i => $k)
+                    <tr>
+                        <td style="color:var(--text-muted);font-size:12px;">{{ $karyawan->firstItem() + $i }}</td>
+                        <td style="font-weight:500;">{{ $k->nama }}</td>
+                        <td style="color:var(--text-muted);">{{ $k->email }}</td>
+                        <td>
+                            <span class="badge
+                                {{ $k->peran === 'admin'    ? 'badge-gold'  : '' }}
+                                {{ $k->peran === 'operator' ? 'badge-green' : '' }}
+                                {{ $k->peran === 'kasir'    ? 'badge-blue'  : '' }}
+                            ">
+                                {{ ucfirst($k->peran) }}
+                            </span>
+                        </td>
+                        <td>
+                            @if ($k->sudahAktif())
+                                <span class="badge badge-green">✓ Aktif</span>
+                            @elseif ($k->tokenMasihValid())
+                                <span class="badge badge-gold">📧 Diundang</span>
+                            @else
+                                <span class="badge badge-red">✗ Link Expired</span>
+                            @endif
+                        </td>
+                        <td style="color:var(--text-muted);font-size:12px;">
+                            {{ $k->created_at->format('d M Y') }}
+                        </td>
+                        <td style="text-align:right;">
+                            <div style="display:flex;gap:6px;justify-content:flex-end;align-items:center;">
+                                <a href="{{ route('admin.karyawan.edit', $k->id) }}" class="btn btn-outline btn-sm">Edit</a>
 
-    {{-- Header --}}
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h4 class="fw-bold mb-0">
-            <i class="bi bi-people-fill me-2 text-primary"></i>Manajemen Karyawan
-        </h4>
-        <a href="{{ route('admin.karyawan.tambah') }}" class="btn btn-primary">
-            <i class="bi bi-plus-circle me-1"></i> Tambah Karyawan
-        </a>
-    </div>
-
-    {{-- Alert --}}
-    @if(session('success'))
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            {{ session('success') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    @endif
-
-    {{-- Filter Peran --}}
-    <div class="card shadow-sm mb-3">
-        <div class="card-body py-2">
-            <form method="GET" class="row g-2 align-items-center">
-                <div class="col-auto">
-                    <label class="col-form-label fw-semibold">Filter Peran:</label>
-                </div>
-                <div class="col-auto">
-                    <select name="peran" class="form-select form-select-sm" onchange="this.form.submit()">
-                        <option value="">Semua Peran</option>
-                        <option value="admin"    {{ request('peran') == 'admin'    ? 'selected' : '' }}>Admin</option>
-                        <option value="operator" {{ request('peran') == 'operator' ? 'selected' : '' }}>Operator</option>
-                        <option value="kasir"    {{ request('peran') == 'kasir'    ? 'selected' : '' }}>Kasir</option>
-                    </select>
-                </div>
-                <div class="col-auto">
-                    <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
-                        <option value="">Semua Status</option>
-                        <option value="1" {{ request('status') == '1' ? 'selected' : '' }}>Aktif</option>
-                        <option value="0" {{ request('status') == '0' ? 'selected' : '' }}>Nonaktif</option>
-                    </select>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    {{-- Tabel --}}
-    <div class="card shadow-sm">
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                    <thead class="table-light">
-                        <tr>
-                            <th width="50">#</th>
-                            <th>Nama</th>
-                            <th>Username</th>
-                            <th>Email</th>
-                            <th>Peran</th>
-                            <th>Shift</th>
-                            <th>Status</th>
-                            <th>Login Terakhir</th>
-                            <th width="130">Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse($karyawan as $i => $k)
-                        <tr>
-                            <td>{{ $karyawan->firstItem() + $i }}</td>
-                            <td>
-                                <div class="d-flex align-items-center gap-2">
-                                    @if($k->foto)
-                                        <img src="{{ asset('storage/'.$k->foto) }}" class="rounded-circle" width="36" height="36" style="object-fit:cover">
-                                    @else
-                                        <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center" style="width:36px;height:36px;font-size:14px">
-                                            {{ strtoupper(substr($k->nama, 0, 1)) }}
-                                        </div>
-                                    @endif
-                                    <span>{{ $k->nama }}</span>
-                                </div>
-                            </td>
-                            <td><code>{{ $k->username }}</code></td>
-                            <td>{{ $k->email ?? '-' }}</td>
-                            <td>
-                              @php
-                                $badgeClass = match($k->peran) {
-                                    'admin'    => 'bg-danger',
-                                    'operator' => 'bg-primary',
-                                    'kasir'    => 'bg-success',
-                                    default    => 'bg-secondary',
-                                };
-                            @endphp
-                            <span class="badge {{ $badgeClass }}">{{ ucfirst($k->peran ?? '-') }}</span>
-                            </td>
-                            <td>{{ $k->shift ?? '-' }}</td>
-                            <td>
-                                @if($k->is_aktif)
-                                    <span class="badge bg-success">Aktif</span>
-                                @else
-                                    <span class="badge bg-secondary">Nonaktif</span>
+                                {{-- Resend undangan --}}
+                                @if (!$k->sudahAktif())
+                                    <form method="POST" action="{{ route('admin.karyawan.resend', $k->id) }}" style="display:inline;">
+                                        @csrf
+                                        <button type="submit" class="btn btn-outline btn-sm"
+                                            onclick="return confirm('Kirim ulang undangan ke {{ $k->email }}?')"
+                                            title="Kirim ulang email undangan">
+                                            📧 Resend
+                                        </button>
+                                    </form>
                                 @endif
-                            </td>
-                            <td class="text-muted small">
-                                {{ $k->last_login_at?->diffForHumans() ?? 'Belum pernah' }}
-                            </td>
-                            <td>
-                                <a href="{{ route('admin.karyawan.edit', $k->id) }}"
-                                   class="btn btn-sm btn-outline-primary" title="Edit">
-                                    <i class="bi bi-pencil"></i>
-                                </a>
-                                <button type="button"
-                                        class="btn btn-sm btn-outline-danger"
-                                        title="Hapus"
-                                        onclick="konfirmasiHapus({{ $k->id }}, '{{ $k->nama }}')">
-                                    <i class="bi bi-trash"></i>
-                                </button>
-                            </td>
-                        </tr>
-                        @empty
-                        <tr>
-                            <td colspan="9" class="text-center py-4 text-muted">
-                                <i class="bi bi-inbox fs-4 d-block mb-1"></i>
-                                Belum ada data karyawan.
-                            </td>
-                        </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
-        </div>
+
+                                {{-- Hapus --}}
+                                <form method="POST" action="{{ route('admin.karyawan.destroy', $k->id) }}" style="display:inline;">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn btn-danger btn-sm"
+                                        onclick="return confirm('Hapus karyawan {{ $k->nama }}? Tindakan ini tidak bisa dibatalkan.')">
+                                        Hapus
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="7" style="text-align:center;color:var(--text-muted);padding:48px;">
+                            <div style="font-size:32px;margin-bottom:12px;">👥</div>
+                            Belum ada karyawan.
+                            <a href="{{ route('admin.karyawan.tambah') }}" style="color:var(--brown-warm);">Tambah sekarang</a>
+                        </td>
+                    </tr>
+                @endforelse
+            </tbody>
+        </table>
     </div>
 
     {{-- Pagination --}}
-    <div class="mt-3">
-        {{ $karyawan->links() }}
-    </div>
-
+    @if ($karyawan->hasPages())
+        <div style="padding:16px 24px;border-top:1px solid var(--cream-dark);">
+            {{ $karyawan->withQueryString()->links() }}
+        </div>
+    @endif
 </div>
 
-{{-- Form Hapus --}}
-<form id="formHapus" method="POST" action="" style="display: none;">
-    @csrf
-    @method('DELETE')
-</form>
-
 <script>
-function konfirmasiHapus(id, nama) {
-    if (confirm(`Hapus karyawan "${nama}"? Tindakan ini tidak bisa dibatalkan.`)) {
-        const form = document.getElementById('formHapus');
-        form.action = `/admin/karyawan/${id}`;
-        form.submit();
-    }
-}
-</script>
+    function copyManualActivationUrl() {
+        const input = document.getElementById('manualActivationUrl');
 
+        if (!input) return;
+
+        input.select();
+        input.setSelectionRange(0, 99999);
+        navigator.clipboard.writeText(input.value).then(() => {
+            alert('Link aktivasi berhasil disalin.');
+        }).catch(() => {
+            document.execCommand('copy');
+            alert('Link aktivasi berhasil disalin.');
+        });
+    }
+</script>
 @endsection

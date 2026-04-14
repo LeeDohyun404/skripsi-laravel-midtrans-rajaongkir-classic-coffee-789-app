@@ -10,7 +10,7 @@ class AdminController extends Controller
     public function index()
     {
         $products = DB::table('products')->get();
-        return view('admin.index', ['products' => $products]);
+        return view('admin.karyawan.index', ['products' => $products]);
     }
 
     public function history()

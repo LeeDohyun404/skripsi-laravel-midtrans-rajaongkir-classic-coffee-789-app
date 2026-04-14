@@ -1,92 +1,499 @@
-{{-- resources/views/kasir/transaksi.blade.php --}}
-@extends('layouts.app')
+@extends('layouts.karyawan')
 
 @section('title', 'Dashboard Kasir')
+@section('page-title', 'Transaksi Kasir')
+
+@section('sidebar-nav')
+    <span class="nav-section-label">Menu Utama</span>
+    <a href="{{ route('kasir.dashboard') }}" class="nav-item {{ request()->routeIs('kasir.dashboard') ? 'active' : '' }}">
+        <span class="nav-icon">🏠</span> Dashboard
+    </a>
+    <span class="nav-section-label">Transaksi</span>
+    <a href="{{ route('kasir.transaksi') }}" class="nav-item {{ request()->routeIs('kasir.transaksi') ? 'active' : '' }}">
+        <span class="nav-icon">🧾</span> Buat Transaksi
+    </a>
+@endsection
+
+@push('styles')
+    <style>
+        .page-toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+
+        .page-toolbar p {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .date-label {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .tab-bar {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 24px;
+        }
+
+        .tab-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            border-radius: 999px;
+            border: 1px solid var(--cream-dark);
+            background: white;
+            color: var(--brown-mid);
+            font-size: 13px;
+            font-family: 'DM Sans', sans-serif;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .tab-button:hover,
+        .tab-button.active {
+            background: var(--brown-mid);
+            color: var(--gold-light);
+            border-color: var(--gold);
+        }
+
+        .tab-pane {
+            display: none;
+        }
+
+        .tab-pane.active {
+            display: block;
+        }
+
+        .toolbar-inline {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .toolbar-inline select,
+        .toolbar-inline input {
+            padding: 9px 12px;
+            border: 1.5px solid var(--cream-dark);
+            border-radius: 8px;
+            font-size: 13px;
+            color: var(--text);
+            background: white;
+            font-family: 'DM Sans', sans-serif;
+        }
+
+        .toolbar-inline select:focus,
+        .toolbar-inline input:focus {
+            outline: none;
+            border-color: var(--gold);
+            box-shadow: 0 0 0 3px rgba(200, 169, 110, 0.12);
+        }
+
+        .mono-code {
+            font-family: 'DM Sans', sans-serif;
+            font-size: 12px;
+            color: var(--brown-mid);
+            background: #fdf9f4;
+            border: 1px solid var(--cream-dark);
+            border-radius: 8px;
+            padding: 4px 8px;
+            display: inline-block;
+        }
+
+        .amount-text {
+            font-family: 'Playfair Display', serif;
+            color: var(--brown-mid);
+            white-space: nowrap;
+        }
+
+        .muted-text {
+            color: var(--text-muted);
+            font-size: 12px;
+        }
+
+        .action-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .btn-icon {
+            min-width: 36px;
+            min-height: 36px;
+            justify-content: center;
+            padding: 8px 10px;
+        }
+
+        .ranking-badge {
+            font-size: 18px;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 32px;
+        }
+
+        .chart-box {
+            padding: 20px 24px 24px;
+        }
+
+        .split-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .detail-grid {
+            display: grid;
+            gap: 12px;
+        }
+
+        .detail-item {
+            padding: 12px 14px;
+            border: 1px solid var(--cream-dark);
+            border-radius: 10px;
+            background: #fdf9f4;
+        }
+
+        .detail-label {
+            display: block;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+
+        .detail-value {
+            color: var(--text);
+            font-size: 14px;
+            word-break: break-word;
+        }
+
+        .modal-panel {
+            position: fixed;
+            inset: 0;
+            background: rgba(30, 17, 8, 0.45);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            z-index: 9999;
+        }
+
+        .modal-panel.show {
+            display: flex;
+        }
+
+        .modal-card {
+            width: 100%;
+            max-width: 720px;
+            max-height: calc(100vh - 40px);
+            overflow: auto;
+            background: white;
+            border-radius: 16px;
+            border: 1px solid var(--cream-dark);
+            box-shadow: 0 18px 40px rgba(0, 0, 0, 0.12);
+            overflow-x: hidden;
+        }
+
+        .modal-card.modal-sm {
+            max-width: 520px;
+        }
+
+        .modal-card-header,
+        .modal-card-footer {
+            padding: 18px 22px;
+            border-bottom: 1px solid var(--cream-dark);
+        }
+
+        .modal-card-footer {
+            border-bottom: none;
+            border-top: 1px solid var(--cream-dark);
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .modal-card-header h3 {
+            font-family: 'Playfair Display', serif;
+            font-size: 20px;
+            font-weight: 400;
+            color: var(--brown-mid);
+        }
+
+        .modal-card-body {
+            padding: 22px;
+        }
+
+        .history-order-card {
+            border: 1px solid var(--cream-dark);
+            border-radius: 14px;
+            overflow: hidden;
+            margin-bottom: 16px;
+            background: white;
+        }
+
+        .history-order-head {
+            background: #fdf9f4;
+            padding: 14px 18px;
+            border-bottom: 1px solid var(--cream-dark);
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .history-order-body {
+            padding: 0;
+        }
+
+        .history-order-foot {
+            padding: 12px 18px;
+            border-top: 1px solid var(--cream-dark);
+            background: #fdf9f4;
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+
+        .mini-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .mini-table th,
+        .mini-table td {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--cream-dark);
+            text-align: left;
+            font-size: 13px;
+        }
+
+        .mini-table th {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+            background: var(--cream-dark);
+        }
+
+        .mini-table tfoot td {
+            background: #fdf9f4;
+            font-weight: 600;
+        }
+
+        .product-inline {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .product-thumb {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            object-fit: cover;
+            border: 1px solid var(--cream-dark);
+            flex-shrink: 0;
+        }
+
+        .product-fallback {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            border: 1px solid var(--cream-dark);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: #fdf1d6;
+            flex-shrink: 0;
+        }
+
+        .pagination-wrap {
+            padding: 16px 20px;
+            border-top: 1px solid var(--cream-dark);
+            overflow-x: auto;
+        }
+
+        .pagination-wrap nav {
+            width: 100%;
+        }
+
+        .pagination-wrap .flex {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .pagination-wrap .hidden.sm\\:flex-1,
+        .pagination-wrap .sm\\:hidden {
+            display: none !important;
+        }
+
+        .pagination-wrap .sm\\:flex {
+            display: flex !important;
+        }
+
+        .pagination-wrap .sm\\:items-center {
+            align-items: center !important;
+        }
+
+        .pagination-wrap .sm\\:justify-between {
+            justify-content: space-between !important;
+        }
+
+        .pagination-wrap .relative {
+            position: relative;
+        }
+
+        .pagination-wrap .z-0 {
+            z-index: 0;
+        }
+
+        .pagination-wrap .inline-flex {
+            display: inline-flex;
+        }
+
+        .pagination-wrap .shadow-sm {
+            box-shadow: none !important;
+        }
+
+        .pagination-wrap .rounded-md {
+            border-radius: 12px;
+        }
+
+        .pagination-wrap .text-sm {
+            font-size: 13px;
+        }
+
+        .pagination-wrap .text-gray-700,
+        .pagination-wrap .text-gray-500 {
+            color: var(--text-muted) !important;
+        }
+
+        .pagination-wrap .font-medium {
+            font-weight: 500;
+        }
+
+        .pagination-wrap svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        .pagination-wrap a,
+        .pagination-wrap span[aria-current="page"] span,
+        .pagination-wrap span[aria-disabled="true"] span {
+            min-width: 40px;
+            height: 40px;
+            padding: 0 14px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid var(--cream-dark);
+            background: white;
+            color: var(--brown-mid);
+            text-decoration: none;
+            transition: all 0.15s ease;
+        }
+
+        .pagination-wrap .relative.inline-flex.items-center.px-2.py-2,
+        .pagination-wrap .relative.inline-flex.items-center.px-4.py-2 {
+            border-radius: 10px;
+        }
+
+        .pagination-wrap a:hover {
+            background: #fdf9f4;
+            border-color: var(--gold);
+            color: var(--brown-dark);
+        }
+
+        .pagination-wrap span[aria-current="page"] span {
+            background: var(--brown-mid);
+            color: var(--gold-light);
+            border-color: var(--gold);
+            font-weight: 600;
+        }
+
+        .pagination-wrap span[aria-disabled="true"] span {
+            color: #b8aa97;
+            background: #f7f1e7;
+            cursor: not-allowed;
+        }
+
+        @media (max-width: 900px) {
+            .pagination-wrap .flex {
+                justify-content: center !important;
+            }
+        }
+
+        @media (max-width: 900px) {
+            .split-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+@endpush
 
 @section('content')
-<div class="container-fluid">
-
-    {{-- Header --}}
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h4 class="fw-bold mb-0">
-            <i class="bi bi-cash-register me-2 text-success"></i>Dashboard Kasir
-        </h4>
-        <span class="text-muted small">{{ now()->isoFormat('dddd, D MMMM Y') }}</span>
+    <div class="page-toolbar">
+        <div>
+            <h2 style="font-family:'Playfair Display', serif;font-size:24px;font-weight:400;color:var(--brown-mid);margin-bottom:6px;">
+                Transaksi Kasir
+            </h2>
+            <p>Kelola pesanan, riwayat transaksi, dan laporan penjualan dari satu halaman.</p>
+        </div>
+        <span class="date-label">{{ now()->isoFormat('dddd, D MMMM Y') }}</span>
     </div>
 
-    {{-- Alert --}}
-    @if(session('success'))
-        <div class="alert alert-success alert-dismissible fade show">
-            {{ session('success') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon">🧾</div>
+            <div class="stat-value">{{ $totalTransaksiHariIni }}</div>
+            <div class="stat-label">Transaksi Hari Ini</div>
         </div>
-    @endif
-
-    {{-- Statistik Hari Ini --}}
-    <div class="row g-3 mb-4">
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm p-3 text-center">
-                <div class="text-success fs-2 fw-bold">{{ $totalTransaksiHariIni }}</div>
-                <div class="text-muted small">Transaksi Hari Ini</div>
-            </div>
+        <div class="stat-card">
+            <div class="stat-icon">💰</div>
+            <div class="stat-value">Rp {{ number_format($omzetHariIni, 0, ',', '.') }}</div>
+            <div class="stat-label">Omzet Hari Ini</div>
         </div>
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm p-3 text-center">
-                <div class="text-primary fs-5 fw-bold">Rp {{ number_format($omzetHariIni, 0, ',', '.') }}</div>
-                <div class="text-muted small">Omzet Hari Ini</div>
-            </div>
+        <div class="stat-card">
+            <div class="stat-icon">⏳</div>
+            <div class="stat-value">{{ $totalPesananPending }}</div>
+            <div class="stat-label">Pesanan Pending</div>
         </div>
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm p-3 text-center">
-                <div class="text-warning fs-2 fw-bold">{{ $totalPesananPending }}</div>
-                <div class="text-muted small">Pesanan Pending</div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm p-3 text-center">
-                <div class="text-info fs-2 fw-bold">{{ $totalPesananSelesai }}</div>
-                <div class="text-muted small">Pesanan Selesai</div>
-            </div>
+        <div class="stat-card">
+            <div class="stat-icon">✅</div>
+            <div class="stat-value">{{ $totalPesananSelesai }}</div>
+            <div class="stat-label">Pesanan Selesai</div>
         </div>
     </div>
 
-    {{-- Tab Menu --}}
-    <ul class="nav nav-tabs mb-4" id="kasirTab">
-        <li class="nav-item">
-            <a class="nav-link active" data-bs-toggle="tab" href="#tabPesanan">
-                <i class="bi bi-bag-check me-1"></i> Kelola Pesanan
-            </a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link" data-bs-toggle="tab" href="#tabRiwayat">
-                <i class="bi bi-clock-history me-1"></i> Riwayat Transaksi
-            </a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link" data-bs-toggle="tab" href="#tabLaporan">
-                <i class="bi bi-graph-up-arrow me-1"></i> Laporan Penjualan
-            </a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link" data-bs-toggle="tab" href="#tabProduk">
-                <i class="bi bi-trophy me-1"></i> Produk Terlaris
-            </a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link" data-bs-toggle="tab" href="#tabPelangganAktif">
-                <i class="bi bi-people me-1"></i> Pelanggan Aktif
-            </a>
-        </li>
-    </ul>
+    <div class="tab-bar" id="kasirTabs">
+        <button type="button" class="tab-button active" data-tab="tabPesanan">🛍 Kelola Pesanan</button>
+        <button type="button" class="tab-button" data-tab="tabRiwayat">🕘 Riwayat Transaksi</button>
+        <button type="button" class="tab-button" data-tab="tabLaporan">📈 Laporan Penjualan</button>
+        <button type="button" class="tab-button" data-tab="tabProduk">🏆 Produk Terlaris</button>
+        <button type="button" class="tab-button" data-tab="tabPelangganAktif">👥 Pelanggan Aktif</button>
+    </div>
 
-    <div class="tab-content">
-
-        {{-- TAB 1: Kelola Pesanan --}}
-        <div class="tab-pane fade show active" id="tabPesanan">
-            <div class="card shadow-sm">
-                <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                    <span class="fw-semibold">Daftar Pesanan</span>
-                    <select class="form-select form-select-sm w-auto" id="filterStatusPesanan" onchange="filterPesanan()">
+    <div class="tab-pane active" id="tabPesanan">
+        <div class="card">
+            <div class="card-header">
+                <h2>Daftar Pesanan</h2>
+                <div class="toolbar-inline">
+                    <select id="filterStatusPesanan" onchange="filterPesanan()">
                         <option value="all">Semua Status</option>
                         <option value="pending">Pending</option>
                         <option value="processing">Diproses</option>
@@ -94,44 +501,43 @@
                         <option value="cancelled">Dibatalkan</option>
                     </select>
                 </div>
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>#</th>
-                                    <th>No. Order</th>
-                                    <th>Pelanggan</th>
-                                    <th>Tipe</th>
-                                    <th>Total</th>
-                                    <th>Status</th>
-                                    <th>Waktu</th>
-                                    <th>Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @forelse($pesanan as $i => $o)
+            </div>
+            <div class="card-body" style="padding:0;">
+                <div style="overflow-x:auto;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>No. Order</th>
+                                <th>Pelanggan</th>
+                                <th>Tipe</th>
+                                <th>Total</th>
+                                <th>Status</th>
+                                <th>Waktu</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($pesanan as $i => $o)
                                 <tr data-status="{{ $o->status }}">
                                     <td>{{ $pesanan->firstItem() + $i }}</td>
-                                    <td><code>{{ $o->number }}</code></td>
+                                    <td><span class="mono-code">{{ $o->number }}</span></td>
                                     <td>
                                         <div>{{ $o->customer_name ?? 'Guest' }}</div>
-                                        <small class="text-muted">{{ $o->customer_phone ?? '' }}</small>
+                                        <div class="muted-text">{{ $o->customer_phone ?? '' }}</div>
                                     </td>
                                     <td>
-                                        <span class="badge bg-light text-dark border">
-                                            {{ $o->order_type ?? '-' }}
-                                        </span>
+                                        <span class="badge badge-gray">{{ $o->order_type ?? '-' }}</span>
                                     </td>
-                                    <td>Rp {{ number_format($o->total_price, 0, ',', '.') }}</td>
+                                    <td><span class="amount-text">Rp {{ number_format($o->total_price, 0, ',', '.') }}</span></td>
                                     <td>
                                         @php
                                             $badge = match($o->status) {
-                                                'pending'    => 'bg-warning text-dark',
-                                                'processing' => 'bg-info text-dark',
-                                                'completed'  => 'bg-success',
-                                                'cancelled'  => 'bg-danger',
-                                                default      => 'bg-secondary',
+                                                'pending'    => 'badge-gold',
+                                                'processing' => 'badge-blue',
+                                                'completed'  => 'badge-green',
+                                                'cancelled'  => 'badge-red',
+                                                default      => 'badge-gray',
                                             };
                                             $label = match($o->status) {
                                                 'pending'    => 'Pending',
@@ -143,727 +549,706 @@
                                         @endphp
                                         <span class="badge {{ $badge }}">{{ $label }}</span>
                                     </td>
-                                    <td class="text-muted small">
+                                    <td class="muted-text">
                                         {{ \Carbon\Carbon::parse($o->created_at)->diffForHumans() }}
                                     </td>
                                     <td>
-                                        <div class="d-flex gap-1">
-                                            <button class="btn btn-sm btn-outline-secondary btn-detail"
-                                                    data-number="{{ $o->number }}"
-                                                    data-nama="{{ $o->customer_name }}"
-                                                    data-telp="{{ $o->customer_phone }}"
-                                                    data-email="{{ $o->customer_email }}"
-                                                    data-tipe="{{ $o->order_type }}"
-                                                    data-total="{{ number_format($o->total_price, 0, ',', '.') }}"
-                                                    data-status="{{ $o->status }}"
-                                                    data-alamat="{{ $o->address }}"
-                                                    data-catatan="{{ $o->notes }}"
-                                                    title="Detail">
-                                                <i class="bi bi-eye"></i>
+                                        <div class="action-group">
+                                            <button
+                                                type="button"
+                                                class="btn btn-outline btn-sm btn-icon btn-detail"
+                                                data-number="{{ $o->number }}"
+                                                data-nama="{{ $o->customer_name }}"
+                                                data-telp="{{ $o->customer_phone }}"
+                                                data-email="{{ $o->customer_email }}"
+                                                data-tipe="{{ $o->order_type }}"
+                                                data-total="{{ number_format($o->total_price, 0, ',', '.') }}"
+                                                data-status="{{ $o->status }}"
+                                                data-alamat="{{ $o->address }}"
+                                                data-catatan="{{ $o->notes }}"
+                                                title="Detail">
+                                                👁
                                             </button>
                                             @if($o->status == 'pending')
-                                            <form method="POST" action="{{ route('kasir.pesanan.update', $o->id) }}" style="display:inline">
-                                                @csrf @method('PUT')
-                                                <input type="hidden" name="status" value="processing">
-                                                <button type="submit" class="btn btn-sm btn-outline-info" title="Proses">
-                                                    <i class="bi bi-play-circle"></i>
-                                                </button>
-                                            </form>
+                                                <form method="POST" action="{{ route('kasir.pesanan.update', $o->id) }}" style="display:inline">
+                                                    @csrf
+                                                    @method('PUT')
+                                                    <input type="hidden" name="status" value="processing">
+                                                    <button type="submit" class="btn btn-outline btn-sm btn-icon" title="Proses">▶</button>
+                                                </form>
                                             @endif
                                             @if($o->status == 'processing')
-                                            <form method="POST" action="{{ route('kasir.pesanan.update', $o->id) }}" style="display:inline">
-                                                @csrf @method('PUT')
-                                                <input type="hidden" name="status" value="completed">
-                                                <button type="submit" class="btn btn-sm btn-outline-success" title="Selesai">
-                                                    <i class="bi bi-check-circle"></i>
-                                                </button>
-                                            </form>
+                                                <form method="POST" action="{{ route('kasir.pesanan.update', $o->id) }}" style="display:inline">
+                                                    @csrf
+                                                    @method('PUT')
+                                                    <input type="hidden" name="status" value="completed">
+                                                    <button type="submit" class="btn btn-primary btn-sm btn-icon" title="Selesai">✓</button>
+                                                </form>
                                             @endif
                                         </div>
                                     </td>
                                 </tr>
-                                @empty
+                            @empty
                                 <tr>
-                                    <td colspan="8" class="text-center py-4 text-muted">
-                                        <i class="bi bi-inbox fs-4 d-block mb-1"></i>
-                                        Belum ada pesanan.
-                                    </td>
+                                    <td colspan="8" class="empty-state">Belum ada pesanan.</td>
                                 </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
-                    </div>
-                    <div class="p-3">{{ $pesanan->links() }}</div>
+                            @endforelse
+                        </tbody>
+                    </table>
                 </div>
+                <div class="pagination-wrap">{{ $pesanan->links() }}</div>
             </div>
         </div>
+    </div>
 
-        {{-- TAB 2: Riwayat Transaksi --}}
-        <div class="tab-pane fade" id="tabRiwayat">
-            <div class="card shadow-sm">
-                <div class="card-header bg-white">
-                    <form method="GET" class="row g-2 align-items-center">
-                        <div class="col-md-3">
-                            <input type="date" name="dari" value="{{ request('dari') }}" class="form-control form-control-sm">
-                        </div>
-                        <div class="col-md-3">
-                            <input type="date" name="sampai" value="{{ request('sampai') }}" class="form-control form-control-sm">
-                        </div>
-                        <div class="col-auto">
-                            <button type="submit" class="btn btn-sm btn-outline-secondary">
-                                <i class="bi bi-filter"></i> Filter
-                            </button>
-                        </div>
-                    </form>
-                </div>
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>#</th>
-                                    <th>No. Order</th>
-                                    <th>Pelanggan</th>
-                                    <th>Tipe</th>
-                                    <th>Total</th>
-                                    <th>Status</th>
-                                    <th>Tanggal</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @forelse($riwayat as $i => $r)
+    <div class="tab-pane" id="tabRiwayat">
+        <div class="card">
+            <div class="card-header">
+                <h2>Riwayat Transaksi</h2>
+                <form method="GET" class="toolbar-inline">
+                    <input type="date" name="dari" value="{{ request('dari') }}">
+                    <input type="date" name="sampai" value="{{ request('sampai') }}">
+                    <button type="submit" class="btn btn-outline btn-sm">Filter</button>
+                </form>
+            </div>
+            <div class="card-body" style="padding:0;">
+                <div style="overflow-x:auto;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>No. Order</th>
+                                <th>Pelanggan</th>
+                                <th>Tipe</th>
+                                <th>Total</th>
+                                <th>Status</th>
+                                <th>Tanggal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($riwayat as $i => $r)
                                 <tr>
                                     <td>{{ $riwayat->firstItem() + $i }}</td>
-                                    <td><code>{{ $r->number }}</code></td>
+                                    <td><span class="mono-code">{{ $r->number }}</span></td>
                                     <td>{{ $r->customer_name ?? 'Guest' }}</td>
                                     <td>{{ $r->order_type ?? '-' }}</td>
-                                    <td>Rp {{ number_format($r->total_price, 0, ',', '.') }}</td>
+                                    <td><span class="amount-text">Rp {{ number_format($r->total_price, 0, ',', '.') }}</span></td>
                                     <td>
-                                        <span class="badge {{ $r->status == 'completed' ? 'bg-success' : ($r->status == 'cancelled' ? 'bg-danger' : 'bg-warning text-dark') }}">
+                                        <span class="badge {{ $r->status == 'completed' ? 'badge-green' : ($r->status == 'cancelled' ? 'badge-red' : 'badge-gold') }}">
                                             {{ ucfirst($r->status) }}
                                         </span>
                                     </td>
-                                    <td class="text-muted small">
+                                    <td class="muted-text">
                                         {{ \Carbon\Carbon::parse($r->created_at)->format('d/m/Y H:i') }}
                                     </td>
                                 </tr>
-                                @empty
+                            @empty
                                 <tr>
-                                    <td colspan="7" class="text-center py-4 text-muted">
-                                        <i class="bi bi-inbox fs-4 d-block mb-1"></i>
-                                        Belum ada riwayat transaksi.
-                                    </td>
+                                    <td colspan="7" class="empty-state">Belum ada riwayat transaksi.</td>
                                 </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+                <div class="pagination-wrap">{{ $riwayat->links() }}</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="tab-pane" id="tabLaporan">
+        <div class="card" style="margin-bottom:16px;">
+            <div class="card-header">
+                <h2>Grafik Penjualan</h2>
+                <div class="toolbar-inline" id="btnGrupPenjualan">
+                    <button type="button" class="btn btn-primary btn-sm active-period" onclick="gantiPeriodePenjualan('hari', this)">Hari Ini</button>
+                    <button type="button" class="btn btn-outline btn-sm" onclick="gantiPeriodePenjualan('minggu', this)">Minggu Ini</button>
+                    <button type="button" class="btn btn-outline btn-sm" onclick="gantiPeriodePenjualan('bulan', this)">Bulan Ini</button>
+                </div>
+            </div>
+            <div class="chart-box">
+                <canvas id="grafikPenjualan" height="90"></canvas>
+            </div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon">💵</div>
+                <div class="stat-value">Rp {{ number_format($laporanOmzet, 0, ',', '.') }}</div>
+                <div class="stat-label">Total Omzet</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">🧾</div>
+                <div class="stat-value">{{ $laporanJumlahOrder }}</div>
+                <div class="stat-label">Total Order</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">📊</div>
+                <div class="stat-value">Rp {{ number_format($laporanRataRata, 0, ',', '.') }}</div>
+                <div class="stat-label">Rata-rata per Order</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="tab-pane" id="tabProduk">
+        <div class="split-grid">
+            <div class="card">
+                <div class="card-header">
+                    <h2>Grafik Produk Terlaris</h2>
+                </div>
+                <div class="chart-box">
+                    <canvas id="grafikProduk" height="300"></canvas>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header">
+                    <h2>Ranking Produk</h2>
+                </div>
+                <div class="card-body" style="padding:0;">
+                    <div style="overflow-x:auto;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th width="40">#</th>
+                                    <th>Produk</th>
+                                    <th>Terjual</th>
+                                    <th>Pendapatan</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse($topProduk as $i => $tp)
+                                    <tr>
+                                        <td>
+                                            @if($i == 0)
+                                                <span class="ranking-badge">🥇</span>
+                                            @elseif($i == 1)
+                                                <span class="ranking-badge">🥈</span>
+                                            @elseif($i == 2)
+                                                <span class="ranking-badge">🥉</span>
+                                            @else
+                                                <span class="muted-text">{{ $i + 1 }}</span>
+                                            @endif
+                                        </td>
+                                        <td style="font-weight:600;">{{ $tp->name }}</td>
+                                        <td><span class="badge badge-green">{{ $tp->total_terjual }} pcs</span></td>
+                                        <td><span class="amount-text">Rp {{ number_format($tp->total_pendapatan, 0, ',', '.') }}</span></td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="4" class="empty-state">Belum ada data produk.</td>
+                                    </tr>
                                 @endforelse
                             </tbody>
                         </table>
                     </div>
-                    <div class="p-3">{{ $riwayat->links() }}</div>
                 </div>
-            </div>
-        </div>
-
-        {{-- TAB 3: Laporan Penjualan --}}
-        <div class="tab-pane fade" id="tabLaporan">
-            <div class="card shadow-sm mb-3">
-                <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
-                    <span class="fw-semibold"><i class="bi bi-graph-up-arrow me-2 text-success"></i>Grafik Penjualan</span>
-                    <div class="btn-group btn-group-sm" role="group" id="btnGrupPenjualan">
-                        <button type="button" class="btn btn-success active" onclick="gantiPeriodePenjualan('hari', this)">Hari Ini</button>
-                        <button type="button" class="btn btn-outline-success" onclick="gantiPeriodePenjualan('minggu', this)">Minggu Ini</button>
-                        <button type="button" class="btn btn-outline-success" onclick="gantiPeriodePenjualan('bulan', this)">Bulan Ini</button>
-                    </div>
-                </div>
-                <div class="card-body">
-                    <canvas id="grafikPenjualan" height="90"></canvas>
-                </div>
-            </div>
-
-            {{-- Statistik ringkasan --}}
-            <div class="row g-3 mb-3">
-                <div class="col-md-4">
-                    <div class="card border-0 shadow-sm p-3 text-center">
-                        <div class="text-success fs-4 fw-bold">Rp {{ number_format($laporanOmzet, 0, ',', '.') }}</div>
-                        <div class="text-muted small">Total Omzet</div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="card border-0 shadow-sm p-3 text-center">
-                        <div class="text-primary fs-4 fw-bold">{{ $laporanJumlahOrder }}</div>
-                        <div class="text-muted small">Total Order</div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="card border-0 shadow-sm p-3 text-center">
-                        <div class="text-info fs-4 fw-bold">Rp {{ number_format($laporanRataRata, 0, ',', '.') }}</div>
-                        <div class="text-muted small">Rata-rata per Order</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        {{-- TAB 4: Produk Terlaris --}}
-        <div class="tab-pane fade" id="tabProduk">
-            <div class="row g-3">
-                <div class="col-md-6">
-                    <div class="card shadow-sm h-100">
-                        <div class="card-header bg-white py-3">
-                            <span class="fw-semibold"><i class="bi bi-trophy me-2 text-warning"></i>Grafik Produk Terlaris</span>
-                        </div>
-                        <div class="card-body">
-                            <canvas id="grafikProduk" height="300"></canvas>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="card shadow-sm h-100">
-                        <div class="card-header bg-white py-3">
-                            <span class="fw-semibold"><i class="bi bi-list-ol me-2 text-warning"></i>Ranking Produk</span>
-                        </div>
-                        <div class="card-body p-0">
-                            <div class="table-responsive">
-                                <table class="table table-hover align-middle mb-0">
-                                    <thead class="table-light">
-                                        <tr>
-                                            <th width="40">#</th>
-                                            <th>Produk</th>
-                                            <th>Terjual</th>
-                                            <th>Pendapatan</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @forelse($topProduk as $i => $tp)
-                                        <tr>
-                                            <td>
-                                                @if($i == 0) <span class="badge bg-warning text-dark">🥇</span>
-                                                @elseif($i == 1) <span class="badge bg-secondary">🥈</span>
-                                                @elseif($i == 2) <span class="badge" style="background:#cd7f32">🥉</span>
-                                                @else <span class="text-muted">{{ $i + 1 }}</span>
-                                                @endif
-                                            </td>
-                                            <td class="fw-semibold">{{ $tp->name }}</td>
-                                            <td><span class="badge bg-success">{{ $tp->total_terjual }} pcs</span></td>
-                                            <td>Rp {{ number_format($tp->total_pendapatan, 0, ',', '.') }}</td>
-                                        </tr>
-                                        @empty
-                                        <tr>
-                                            <td colspan="4" class="text-center text-muted py-4">
-                                                <i class="bi bi-inbox fs-4 d-block mb-1"></i>
-                                                Belum ada data produk.
-                                            </td>
-                                        </tr>
-                                        @endforelse
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        {{-- TAB 5: Pelanggan Aktif --}}
-        <div class="tab-pane fade" id="tabPelangganAktif">
-            <div class="row g-3">
-                <div class="col-md-5">
-                    <div class="card shadow-sm h-100">
-                        <div class="card-header bg-white py-3">
-                            <span class="fw-semibold"><i class="bi bi-people me-2 text-primary"></i>Grafik Pelanggan Aktif</span>
-                        </div>
-                        <div class="card-body d-flex align-items-center justify-content-center">
-                            <canvas id="grafikPelanggan" height="280"></canvas>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-7">
-                    <div class="card shadow-sm h-100">
-                        <div class="card-header bg-white py-3">
-                            <span class="fw-semibold"><i class="bi bi-list-stars me-2 text-primary"></i>Ranking Pelanggan Paling Sering Beli</span>
-                        </div>
-                        <div class="card-body p-0">
-                            <div class="table-responsive">
-                                <table class="table table-hover align-middle mb-0">
-                                    <thead class="table-light">
-                                        <tr>
-                                            <th width="40">#</th>
-                                            <th>Pelanggan</th>
-                                            <th>Total Pesanan</th>
-                                            <th>Total Belanja</th>
-                                            <th width="80">Aksi</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @forelse($topPelanggan ?? [] as $i => $tp)
-                                        <tr>
-                                            <td>
-                                                @if($i == 0) <span class="badge bg-warning text-dark">🥇</span>
-                                                @elseif($i == 1) <span class="badge bg-secondary">🥈</span>
-                                                @elseif($i == 2) <span class="badge" style="background:#cd7f32">🥉</span>
-                                                @else <span class="text-muted">{{ $i + 1 }}</span>
-                                                @endif
-                                            </td>
-                                            <td>
-                                                <div class="fw-semibold">{{ $tp->customer_name ?? 'Guest' }}</div>
-                                                <small class="text-muted">{{ $tp->customer_email ?? '' }}</small>
-                                            </td>
-                                            <td><span class="badge bg-primary">{{ $tp->total_order }} pesanan</span></td>
-                                            <td>Rp {{ number_format($tp->total_belanja ?? 0, 0, ',', '.') }}</td>
-                                            <td>
-                                                <button class="btn btn-sm btn-outline-primary btn-detail-pelanggan"
-                                                        data-nama="{{ $tp->customer_name }}"
-                                                        title="Lihat Detail Pesanan">
-                                                    <i class="bi bi-eye"></i>
-                                                </button>
-                                            </td>
-                                        </tr>
-                                        @empty
-                                        <tr>
-                                            <td colspan="5" class="text-center text-muted py-4">
-                                                <i class="bi bi-inbox fs-4 d-block mb-1"></i>
-                                                Belum ada data pelanggan.
-                                            </td>
-                                        </tr>
-                                        @endforelse
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-    </div>
-</div>
-
-{{-- Modal Detail Pesanan Per Pelanggan --}}
-<div class="modal fade" id="modalDetailPelanggan" tabindex="-1">
-    <div class="modal-dialog modal-lg modal-dialog-scrollable">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title"><i class="bi bi-person-lines-fill me-2 text-primary"></i>Riwayat Pesanan — <span id="dpNama"></span></h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body" id="dpBody">
-                <div class="text-center py-4 text-muted">
-                    <div class="spinner-border spinner-border-sm me-2"></div> Memuat data...
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
             </div>
         </div>
     </div>
-</div>
 
-{{-- Modal Detail Pesanan --}}
-<div class="modal fade" id="modalDetail" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Detail Pesanan <span id="detailNomor"></span></h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+    <div class="tab-pane" id="tabPelangganAktif">
+        <div class="split-grid" style="grid-template-columns: 0.9fr 1.1fr;">
+            <div class="card">
+                <div class="card-header">
+                    <h2>Grafik Pelanggan Aktif</h2>
+                </div>
+                <div class="chart-box" style="display:flex;align-items:center;justify-content:center;">
+                    <canvas id="grafikPelanggan" height="280"></canvas>
+                </div>
             </div>
-            <div class="modal-body">
-                <table class="table table-sm">
-                    <tr><th width="140">Pelanggan</th><td id="detailNama"></td></tr>
-                    <tr><th>Telepon</th><td id="detailTelp"></td></tr>
-                    <tr><th>Email</th><td id="detailEmail"></td></tr>
-                    <tr><th>Tipe Order</th><td id="detailTipe"></td></tr>
-                    <tr><th>Total</th><td id="detailTotal"></td></tr>
-                    <tr><th>Status</th><td id="detailStatus"></td></tr>
-                    <tr><th>Alamat</th><td id="detailAlamat"></td></tr>
-                    <tr><th>Catatan</th><td id="detailCatatan"></td></tr>
-                </table>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+            <div class="card">
+                <div class="card-header">
+                    <h2>Ranking Pelanggan Paling Sering Beli</h2>
+                </div>
+                <div class="card-body" style="padding:0;">
+                    <div style="overflow-x:auto;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th width="40">#</th>
+                                    <th>Pelanggan</th>
+                                    <th>Total Pesanan</th>
+                                    <th>Total Belanja</th>
+                                    <th width="80">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse($topPelanggan ?? [] as $i => $tp)
+                                    <tr>
+                                        <td>
+                                            @if($i == 0)
+                                                <span class="ranking-badge">🥇</span>
+                                            @elseif($i == 1)
+                                                <span class="ranking-badge">🥈</span>
+                                            @elseif($i == 2)
+                                                <span class="ranking-badge">🥉</span>
+                                            @else
+                                                <span class="muted-text">{{ $i + 1 }}</span>
+                                            @endif
+                                        </td>
+                                        <td>
+                                            <div style="font-weight:600;">{{ $tp->customer_name ?? 'Guest' }}</div>
+                                            <div class="muted-text">{{ $tp->customer_email ?? '' }}</div>
+                                        </td>
+                                        <td><span class="badge badge-blue">{{ $tp->total_order }} pesanan</span></td>
+                                        <td><span class="amount-text">Rp {{ number_format($tp->total_belanja ?? 0, 0, ',', '.') }}</span></td>
+                                        <td>
+                                            <button
+                                                type="button"
+                                                class="btn btn-outline btn-sm btn-icon btn-detail-pelanggan"
+                                                data-nama="{{ $tp->customer_name }}"
+                                                title="Lihat Detail Pesanan">
+                                                👁
+                                            </button>
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="5" class="empty-state">Belum ada data pelanggan.</td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
-</div>
 
-{{-- Chart.js --}}
+    <div class="modal-panel" id="modalDetailPelanggan">
+        <div class="modal-card">
+            <div class="modal-card-header">
+                <h3>Riwayat Pesanan — <span id="dpNama"></span></h3>
+            </div>
+            <div class="modal-card-body" id="dpBody">
+                <div class="empty-state">Memuat data...</div>
+            </div>
+            <div class="modal-card-footer">
+                <button type="button" class="btn btn-outline btn-sm" onclick="tutupModal('modalDetailPelanggan')">Tutup</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-panel" id="modalDetail">
+        <div class="modal-card modal-sm">
+            <div class="modal-card-header">
+                <h3>Detail Pesanan <span id="detailNomor"></span></h3>
+            </div>
+            <div class="modal-card-body">
+                <div class="detail-grid">
+                    <div class="detail-item"><span class="detail-label">Pelanggan</span><div class="detail-value" id="detailNama"></div></div>
+                    <div class="detail-item"><span class="detail-label">Telepon</span><div class="detail-value" id="detailTelp"></div></div>
+                    <div class="detail-item"><span class="detail-label">Email</span><div class="detail-value" id="detailEmail"></div></div>
+                    <div class="detail-item"><span class="detail-label">Tipe Order</span><div class="detail-value" id="detailTipe"></div></div>
+                    <div class="detail-item"><span class="detail-label">Total</span><div class="detail-value" id="detailTotal"></div></div>
+                    <div class="detail-item"><span class="detail-label">Status</span><div class="detail-value" id="detailStatus"></div></div>
+                    <div class="detail-item"><span class="detail-label">Alamat</span><div class="detail-value" id="detailAlamat"></div></div>
+                    <div class="detail-item"><span class="detail-label">Catatan</span><div class="detail-value" id="detailCatatan"></div></div>
+                </div>
+            </div>
+            <div class="modal-card-footer">
+                <button type="button" class="btn btn-outline btn-sm" onclick="tutupModal('modalDetail')">Tutup</button>
+            </div>
+        </div>
+    </div>
+@endsection
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
 @php
-    // Default fallback values disiapkan di PHP dulu
-    $defaultJam    = ['00','01','02','03','04','05','06','07','08','09','10','11','12','13','14','15','16','17','18','19','20','21','22','23'];
+    $defaultJam = ['00','01','02','03','04','05','06','07','08','09','10','11','12','13','14','15','16','17','18','19','20','21','22','23'];
     $defaultZero24 = array_fill(0, 24, 0);
-    $defaultHari   = ['Sen','Sel','Rab','Kam','Jum','Sab','Min'];
-    $defaultZero7  = [0,0,0,0,0,0,0];
-    $defaultTgl    = array_map(fn($d) => (string)$d, range(1, 31));
+    $defaultHari = ['Sen','Sel','Rab','Kam','Jum','Sab','Min'];
+    $defaultZero7 = [0,0,0,0,0,0,0];
+    $defaultTgl = array_map(fn($d) => (string)$d, range(1, 31));
     $defaultZero31 = array_fill(0, 31, 0);
 
-    $pHariLabels   = $grafikPenjualan['hari']['labels']   ?? $defaultJam;
-    $pHariOmzet    = $grafikPenjualan['hari']['omzet']    ?? $defaultZero24;
-    $pHariOrder    = $grafikPenjualan['hari']['order']    ?? $defaultZero24;
+    $pHariLabels = $grafikPenjualan['hari']['labels'] ?? $defaultJam;
+    $pHariOmzet = $grafikPenjualan['hari']['omzet'] ?? $defaultZero24;
+    $pHariOrder = $grafikPenjualan['hari']['order'] ?? $defaultZero24;
 
     $pMingguLabels = $grafikPenjualan['minggu']['labels'] ?? $defaultHari;
-    $pMingguOmzet  = $grafikPenjualan['minggu']['omzet']  ?? $defaultZero7;
-    $pMingguOrder  = $grafikPenjualan['minggu']['order']  ?? $defaultZero7;
+    $pMingguOmzet = $grafikPenjualan['minggu']['omzet'] ?? $defaultZero7;
+    $pMingguOrder = $grafikPenjualan['minggu']['order'] ?? $defaultZero7;
 
-    $pBulanLabels  = $grafikPenjualan['bulan']['labels']  ?? $defaultTgl;
-    $pBulanOmzet   = $grafikPenjualan['bulan']['omzet']   ?? $defaultZero31;
-    $pBulanOrder   = $grafikPenjualan['bulan']['order']   ?? $defaultZero31;
+    $pBulanLabels = $grafikPenjualan['bulan']['labels'] ?? $defaultTgl;
+    $pBulanOmzet = $grafikPenjualan['bulan']['omzet'] ?? $defaultZero31;
+    $pBulanOrder = $grafikPenjualan['bulan']['order'] ?? $defaultZero31;
 
-    $produkLabels  = $grafikProduk['labels']    ?? [];
-    $produkValues  = $grafikProduk['values']    ?? [];
+    $produkLabels = $grafikProduk['labels'] ?? [];
+    $produkValues = $grafikProduk['values'] ?? [];
 
     $pelangganLabels = $grafikPelanggan['labels'] ?? [];
     $pelangganValues = $grafikPelanggan['values'] ?? [];
 @endphp
 
-<script>
-// =====================================================
-// DATA DARI BLADE (di-pass dari controller)
-// =====================================================
-
-const dataPenjualan = {
-    hari: {
-        labels: @json($pHariLabels),
-        omzet:  @json($pHariOmzet),
-        order:  @json($pHariOrder),
-    },
-    minggu: {
-        labels: @json($pMingguLabels),
-        omzet:  @json($pMingguOmzet),
-        order:  @json($pMingguOrder),
-    },
-    bulan: {
-        labels: @json($pBulanLabels),
-        omzet:  @json($pBulanOmzet),
-        order:  @json($pBulanOrder),
-    },
-};
-
-const dataProduk = {
-    labels: @json($produkLabels),
-    values: @json($produkValues),
-};
-
-const dataPelanggan = {
-    labels: @json($pelangganLabels),
-    values: @json($pelangganValues),
-};
-
-// =====================================================
-// GRAFIK — inisialisasi lazy saat tab dibuka
-// (Chart.js tidak bisa render canvas yg hidden)
-// =====================================================
-let grafikPenjualan = null;
-let grafikProduk    = null;
-let grafikPelanggan = null;
-
-function buatGrafikPenjualan() {
-    if (grafikPenjualan) return; // sudah dibuat, skip
-    const ctx = document.getElementById('grafikPenjualan').getContext('2d');
-    grafikPenjualan = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: dataPenjualan.hari.labels,
-            datasets: [
-                {
-                    label: 'Omzet (Rp)',
-                    data: dataPenjualan.hari.omzet,
-                    borderColor: '#198754',
-                    backgroundColor: 'rgba(25, 135, 84, 0.1)',
-                    fill: true,
-                    tension: 0.4,
-                    pointBackgroundColor: '#198754',
-                    pointRadius: 4,
-                    yAxisID: 'yOmzet',
-                },
-                {
-                    label: 'Jumlah Order',
-                    data: dataPenjualan.hari.order,
-                    borderColor: '#0d6efd',
-                    backgroundColor: 'rgba(13, 110, 253, 0.08)',
-                    fill: false,
-                    tension: 0.4,
-                    pointBackgroundColor: '#0d6efd',
-                    pointRadius: 4,
-                    yAxisID: 'yOrder',
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            interaction: { mode: 'index', intersect: false },
-            plugins: {
-                legend: { position: 'top' },
-                tooltip: {
-                    callbacks: {
-                        label: function(ctx) {
-                            if (ctx.datasetIndex === 0) {
-                                return ' Omzet: Rp ' + ctx.parsed.y.toLocaleString('id-ID');
-                            }
-                            return ' Order: ' + ctx.parsed.y + ' pesanan';
-                        }
-                    }
-                }
+@push('scripts')
+    <script>
+        const dataPenjualan = {
+            hari: {
+                labels: @json($pHariLabels),
+                omzet: @json($pHariOmzet),
+                order: @json($pHariOrder),
             },
-            scales: {
-                yOmzet: {
-                    type: 'linear',
-                    position: 'left',
-                    ticks: {
-                        callback: v => 'Rp ' + (v >= 1000000 ? (v/1000000).toFixed(1)+'jt' : v >= 1000 ? (v/1000).toFixed(0)+'rb' : v)
-                    },
-                    grid: { color: 'rgba(0,0,0,0.05)' }
-                },
-                yOrder: {
-                    type: 'linear',
-                    position: 'right',
-                    ticks: { stepSize: 1 },
-                    grid: { drawOnChartArea: false }
-                }
-            }
-        }
-    });
-}
-
-function buatGrafikProduk() {
-    if (grafikProduk) return;
-    const ctx = document.getElementById('grafikProduk').getContext('2d');
-    grafikProduk = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: dataProduk.labels.length ? dataProduk.labels : ['Belum ada data'],
-            datasets: [{
-                label: 'Terjual (pcs)',
-                data: dataProduk.values.length ? dataProduk.values : [0],
-                backgroundColor: [
-                    'rgba(255, 193, 7, 0.85)',
-                    'rgba(13, 110, 253, 0.75)',
-                    'rgba(25, 135, 84, 0.75)',
-                    'rgba(220, 53, 69, 0.75)',
-                    'rgba(13, 202, 240, 0.75)',
-                    'rgba(111, 66, 193, 0.75)',
-                    'rgba(253, 126, 20, 0.75)',
-                ],
-                borderRadius: 6,
-                borderSkipped: false,
-            }]
-        },
-        options: {
-            indexAxis: 'y',
-            responsive: true,
-            plugins: {
-                legend: { display: false },
-                tooltip: { callbacks: { label: ctx => ' ' + ctx.parsed.x + ' pcs terjual' } }
+            minggu: {
+                labels: @json($pMingguLabels),
+                omzet: @json($pMingguOmzet),
+                order: @json($pMingguOrder),
             },
-            scales: {
-                x: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: 'rgba(0,0,0,0.05)' } },
-                y: {
-                    grid: { display: false },
-                    ticks: {
-                        font: { size: 12 },
-                        callback: function(val) {
-                            const label = this.getLabelForValue(val);
-                            return label.length > 20 ? label.substring(0, 18) + '…' : label;
-                        }
-                    }
-                }
-            }
-        }
-    });
-}
+            bulan: {
+                labels: @json($pBulanLabels),
+                omzet: @json($pBulanOmzet),
+                order: @json($pBulanOrder),
+            },
+        };
 
-function buatGrafikPelanggan() {
-    if (grafikPelanggan) return;
-    const ctx = document.getElementById('grafikPelanggan').getContext('2d');
-    grafikPelanggan = new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-            labels: dataPelanggan.labels.length ? dataPelanggan.labels : ['Belum ada data'],
-            datasets: [{
-                data: dataPelanggan.values.length ? dataPelanggan.values : [1],
-                backgroundColor: [
-                    'rgba(13, 110, 253, 0.85)',
-                    'rgba(25, 135, 84, 0.80)',
-                    'rgba(255, 193, 7, 0.85)',
-                    'rgba(220, 53, 69, 0.80)',
-                    'rgba(13, 202, 240, 0.80)',
-                    'rgba(111, 66, 193, 0.80)',
-                    'rgba(253, 126, 20, 0.80)',
-                ],
-                hoverOffset: 8,
-                borderWidth: 2,
-            }]
-        },
-        options: {
-            responsive: true,
-            cutout: '60%',
-            plugins: {
-                legend: { position: 'bottom', labels: { padding: 12, font: { size: 12 }, boxWidth: 14 } },
-                tooltip: { callbacks: { label: ctx => ' ' + ctx.label + ': ' + ctx.parsed + ' pesanan' } }
-            }
-        }
-    });
-}
+        const dataProduk = {
+            labels: @json($produkLabels),
+            values: @json($produkValues),
+        };
 
-// Render grafik saat tab pertama kali dibuka
-document.querySelectorAll('a[data-bs-toggle="tab"]').forEach(tab => {
-    tab.addEventListener('shown.bs.tab', function(e) {
-        const target = e.target.getAttribute('href');
-        if (target === '#tabLaporan')        buatGrafikPenjualan();
-        if (target === '#tabProduk')         buatGrafikProduk();
-        if (target === '#tabPelangganAktif') buatGrafikPelanggan();
-    });
-});
+        const dataPelanggan = {
+            labels: @json($pelangganLabels),
+            values: @json($pelangganValues),
+        };
 
-function gantiPeriodePenjualan(periode, btn) {
-    document.querySelectorAll('#btnGrupPenjualan button').forEach(b => {
-        b.classList.remove('btn-success');
-        b.classList.add('btn-outline-success');
-    });
-    btn.classList.remove('btn-outline-success');
-    btn.classList.add('btn-success');
+        let grafikPenjualan = null;
+        let grafikProduk = null;
+        let grafikPelanggan = null;
 
-    if (!grafikPenjualan) return;
-    const d = dataPenjualan[periode];
-    grafikPenjualan.data.labels = d.labels;
-    grafikPenjualan.data.datasets[0].data = d.omzet;
-    grafikPenjualan.data.datasets[1].data = d.order;
-    grafikPenjualan.update();
-}
+        function aktifkanTab(tabId) {
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.tab === tabId);
+            });
 
-// =====================================================
-// DETAIL PESANAN PER PELANGGAN
-// =====================================================
-document.addEventListener('click', function(e) {
-    const btn = e.target.closest('.btn-detail-pelanggan');
-    if (!btn) return;
+            document.querySelectorAll('.tab-pane').forEach(pane => {
+                pane.classList.toggle('active', pane.id === tabId);
+            });
 
-    const nama = btn.dataset.nama;
-    document.getElementById('dpNama').textContent = nama;
-    document.getElementById('dpBody').innerHTML = `
-        <div class="text-center py-4 text-muted">
-            <div class="spinner-border spinner-border-sm me-2"></div> Memuat data...
-        </div>`;
-    new bootstrap.Modal(document.getElementById('modalDetailPelanggan')).show();
-
-    fetch(`/kasir/detail-pelanggan?customer_name=${encodeURIComponent(nama)}`, {
-        headers: { 'X-Requested-With': 'XMLHttpRequest' }
-    })
-    .then(r => r.json())
-    .then(orders => {
-        if (!orders || orders.length === 0) {
-            document.getElementById('dpBody').innerHTML = '<p class="text-muted text-center py-3">Belum ada data pesanan.</p>';
-            return;
+            if (tabId === 'tabLaporan') buatGrafikPenjualan();
+            if (tabId === 'tabProduk') buatGrafikProduk();
+            if (tabId === 'tabPelangganAktif') buatGrafikPelanggan();
         }
 
-        let html = '';
-        orders.forEach((order, idx) => {
-            const statusBadge = {
-                'success': '<span class="badge bg-success">Selesai</span>',
-                'completed': '<span class="badge bg-success">Selesai</span>',
-                'pending': '<span class="badge bg-warning text-dark">Pending</span>',
-                'processing': '<span class="badge bg-info text-dark">Diproses</span>',
-                'cancelled': '<span class="badge bg-danger">Dibatalkan</span>',
-            }[order.status] || `<span class="badge bg-secondary">${order.status}</span>`;
-
-            // Item rows
-            let itemRows = '';
-            if (order.items && order.items.length > 0) {
-                order.items.forEach(item => {
-                    itemRows += `
-                        <tr>
-                            <td class="ps-3">
-                                <div class="d-flex align-items-center gap-2">
-                                    ${item.product_image
-                                        ? `<img src="/images/${item.product_image}" class="rounded" width="36" height="36" style="object-fit:cover">`
-                                        : `<div class="rounded bg-warning-subtle d-flex align-items-center justify-content-center" style="width:36px;height:36px;font-size:16px">☕</div>`
-                                    }
-                                    <span class="fw-semibold">${item.product_name}</span>
-                                </div>
-                            </td>
-                            <td>Rp ${parseInt(item.price).toLocaleString('id-ID')}</td>
-                            <td>${item.quantity}x</td>
-                            <td class="fw-bold">Rp ${parseInt(item.subtotal).toLocaleString('id-ID')}</td>
-                        </tr>`;
-                });
-            } else {
-                itemRows = `<tr><td colspan="4" class="text-muted text-center small ps-3">Data item tidak tersedia (pesanan lama)</td></tr>`;
-            }
-
-            // Kurir row
-            const kurirRow = order.order_type === 'take-away' && order.ongkir > 0
-                ? `<tr class="table-light">
-                        <td colspan="3" class="ps-3 text-muted">🚚 Kurir: <strong>${order.courier_name} - ${order.courier_service}</strong></td>
-                        <td class="fw-bold">Rp ${parseInt(order.ongkir).toLocaleString('id-ID')}</td>
-                    </tr>`
-                : '';
-
-            html += `
-                <div class="card border-0 shadow-sm mb-3">
-                    <div class="card-header bg-light d-flex justify-content-between align-items-center py-2">
-                        <div>
-                            <code class="text-primary">${order.number}</code>
-                            <span class="ms-2 text-muted small">${order.created_at ? new Date(order.created_at).toLocaleDateString('id-ID', {day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '-'}</span>
-                        </div>
-                        <div class="d-flex align-items-center gap-2">
-                            <span class="badge bg-light text-dark border">${order.order_type ?? '-'}</span>
-                            ${statusBadge}
-                        </div>
-                    </div>
-                    <div class="card-body p-0">
-                        <table class="table table-sm align-middle mb-0">
-                            <thead class="table-light">
-                                <tr>
-                                    <th class="ps-3">Produk</th>
-                                    <th>Harga</th>
-                                    <th>Qty</th>
-                                    <th>Subtotal</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${itemRows}
-                                ${kurirRow}
-                            </tbody>
-                            <tfoot class="table-light">
-                                <tr>
-                                    <td colspan="3" class="ps-3 fw-bold text-end pe-3">Total Pesanan</td>
-                                    <td class="fw-bold text-success">Rp ${parseInt(order.total_price).toLocaleString('id-ID')}</td>
-                                </tr>
-                            </tfoot>
-                        </table>
-                        ${order.address && order.address !== '-'
-                            ? `<div class="px-3 py-2 border-top small text-muted"><i class="bi bi-geo-alt me-1"></i>${order.address}</div>`
-                            : ''}
-                    </div>
-                </div>`;
+        document.querySelectorAll('.tab-button').forEach(button => {
+            button.addEventListener('click', function () {
+                aktifkanTab(this.dataset.tab);
+            });
         });
 
-        document.getElementById('dpBody').innerHTML = html;
-    })
-    .catch(() => {
-        document.getElementById('dpBody').innerHTML = '<p class="text-danger text-center py-3">Gagal memuat data. Coba lagi.</p>';
-    });
-});
-function filterPesanan() {
-    const status = document.getElementById('filterStatusPesanan').value;
-    document.querySelectorAll('tbody tr[data-status]').forEach(row => {
-        row.style.display = (status === 'all' || row.dataset.status === status) ? '' : 'none';
-    });
-}
+        function buatGrafikPenjualan() {
+            if (grafikPenjualan) return;
+            const ctx = document.getElementById('grafikPenjualan').getContext('2d');
+            grafikPenjualan = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: dataPenjualan.hari.labels,
+                    datasets: [
+                        {
+                            label: 'Omzet (Rp)',
+                            data: dataPenjualan.hari.omzet,
+                            borderColor: '#6b3f1f',
+                            backgroundColor: 'rgba(200, 169, 110, 0.18)',
+                            fill: true,
+                            tension: 0.4,
+                            pointBackgroundColor: '#6b3f1f',
+                            pointRadius: 4,
+                            yAxisID: 'yOmzet',
+                        },
+                        {
+                            label: 'Jumlah Order',
+                            data: dataPenjualan.hari.order,
+                            borderColor: '#c8a96e',
+                            backgroundColor: 'rgba(200, 169, 110, 0.08)',
+                            fill: false,
+                            tension: 0.4,
+                            pointBackgroundColor: '#c8a96e',
+                            pointRadius: 4,
+                            yAxisID: 'yOrder',
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: { position: 'top' },
+                        tooltip: {
+                            callbacks: {
+                                label: function(ctx) {
+                                    if (ctx.datasetIndex === 0) {
+                                        return ' Omzet: Rp ' + ctx.parsed.y.toLocaleString('id-ID');
+                                    }
+                                    return ' Order: ' + ctx.parsed.y + ' pesanan';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        yOmzet: {
+                            type: 'linear',
+                            position: 'left',
+                            ticks: {
+                                callback: v => 'Rp ' + (v >= 1000000 ? (v / 1000000).toFixed(1) + 'jt' : v >= 1000 ? (v / 1000).toFixed(0) + 'rb' : v)
+                            },
+                            grid: { color: 'rgba(0,0,0,0.05)' }
+                        },
+                        yOrder: {
+                            type: 'linear',
+                            position: 'right',
+                            ticks: { stepSize: 1 },
+                            grid: { drawOnChartArea: false }
+                        }
+                    }
+                }
+            });
+        }
 
-document.addEventListener('click', function(e) {
-    const btn = e.target.closest('.btn-detail');
-    if (!btn) return;
-    const d = btn.dataset;
-    document.getElementById('detailNomor').textContent   = '#' + (d.number || '-');
-    document.getElementById('detailNama').textContent    = d.nama || '-';
-    document.getElementById('detailTelp').textContent    = d.telp || '-';
-    document.getElementById('detailEmail').textContent   = d.email || '-';
-    document.getElementById('detailTipe').textContent    = d.tipe || '-';
-    document.getElementById('detailTotal').textContent   = 'Rp ' + (d.total || '0');
-    document.getElementById('detailStatus').textContent  = d.status || '-';
-    document.getElementById('detailAlamat').textContent  = d.alamat || '-';
-    document.getElementById('detailCatatan').textContent = d.catatan || '-';
-    new bootstrap.Modal(document.getElementById('modalDetail')).show();
-});
-</script>
+        function buatGrafikProduk() {
+            if (grafikProduk) return;
+            const ctx = document.getElementById('grafikProduk').getContext('2d');
+            grafikProduk = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: dataProduk.labels.length ? dataProduk.labels : ['Belum ada data'],
+                    datasets: [{
+                        label: 'Terjual (pcs)',
+                        data: dataProduk.values.length ? dataProduk.values : [0],
+                        backgroundColor: [
+                            'rgba(200, 169, 110, 0.95)',
+                            'rgba(107, 63, 31, 0.78)',
+                            'rgba(61, 36, 16, 0.75)',
+                            'rgba(232, 213, 163, 0.95)',
+                            'rgba(158, 122, 74, 0.82)',
+                            'rgba(245, 232, 205, 0.95)',
+                            'rgba(140, 96, 58, 0.82)',
+                        ],
+                        borderRadius: 6,
+                        borderSkipped: false,
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { callbacks: { label: ctx => ' ' + ctx.parsed.x + ' pcs terjual' } }
+                    },
+                    scales: {
+                        x: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: 'rgba(0,0,0,0.05)' } },
+                        y: {
+                            grid: { display: false },
+                            ticks: {
+                                font: { size: 12 },
+                                callback: function(val) {
+                                    const label = this.getLabelForValue(val);
+                                    return label.length > 20 ? label.substring(0, 18) + '…' : label;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
 
-@endsection
+        function buatGrafikPelanggan() {
+            if (grafikPelanggan) return;
+            const ctx = document.getElementById('grafikPelanggan').getContext('2d');
+            grafikPelanggan = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: dataPelanggan.labels.length ? dataPelanggan.labels : ['Belum ada data'],
+                    datasets: [{
+                        data: dataPelanggan.values.length ? dataPelanggan.values : [1],
+                        backgroundColor: [
+                            'rgba(107, 63, 31, 0.88)',
+                            'rgba(200, 169, 110, 0.92)',
+                            'rgba(61, 36, 16, 0.82)',
+                            'rgba(232, 213, 163, 0.96)',
+                            'rgba(158, 122, 74, 0.82)',
+                            'rgba(245, 232, 205, 0.98)',
+                            'rgba(140, 96, 58, 0.82)',
+                        ],
+                        hoverOffset: 8,
+                        borderWidth: 2,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    cutout: '60%',
+                    plugins: {
+                        legend: { position: 'bottom', labels: { padding: 12, font: { size: 12 }, boxWidth: 14 } },
+                        tooltip: { callbacks: { label: ctx => ' ' + ctx.label + ': ' + ctx.parsed + ' pesanan' } }
+                    }
+                }
+            });
+        }
+
+        function gantiPeriodePenjualan(periode, btn) {
+            document.querySelectorAll('#btnGrupPenjualan button').forEach(b => {
+                b.classList.remove('btn-primary');
+                b.classList.add('btn-outline');
+            });
+            btn.classList.remove('btn-outline');
+            btn.classList.add('btn-primary');
+
+            if (!grafikPenjualan) return;
+            const d = dataPenjualan[periode];
+            grafikPenjualan.data.labels = d.labels;
+            grafikPenjualan.data.datasets[0].data = d.omzet;
+            grafikPenjualan.data.datasets[1].data = d.order;
+            grafikPenjualan.update();
+        }
+
+        function bukaModal(id) {
+            document.getElementById(id).classList.add('show');
+        }
+
+        function tutupModal(id) {
+            document.getElementById(id).classList.remove('show');
+        }
+
+        document.addEventListener('click', function(event) {
+            const overlay = event.target.closest('.modal-panel');
+            if (overlay && event.target === overlay) {
+                overlay.classList.remove('show');
+            }
+        });
+
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                document.querySelectorAll('.modal-panel.show').forEach(modal => modal.classList.remove('show'));
+            }
+        });
+
+        document.addEventListener('click', function(e) {
+            const btn = e.target.closest('.btn-detail-pelanggan');
+            if (!btn) return;
+
+            const nama = btn.dataset.nama;
+            document.getElementById('dpNama').textContent = nama;
+            document.getElementById('dpBody').innerHTML = '<div class="empty-state">Memuat data...</div>';
+            bukaModal('modalDetailPelanggan');
+
+            fetch(`/kasir/detail-pelanggan?customer_name=${encodeURIComponent(nama)}`, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(r => r.json())
+            .then(orders => {
+                if (!orders || orders.length === 0) {
+                    document.getElementById('dpBody').innerHTML = '<div class="empty-state">Belum ada data pesanan.</div>';
+                    return;
+                }
+
+                let html = '';
+                orders.forEach((order, idx) => {
+                    const statusBadge = {
+                        'success': '<span class="badge badge-green">Selesai</span>',
+                        'completed': '<span class="badge badge-green">Selesai</span>',
+                        'pending': '<span class="badge badge-gold">Pending</span>',
+                        'processing': '<span class="badge badge-blue">Diproses</span>',
+                        'cancelled': '<span class="badge badge-red">Dibatalkan</span>',
+                    }[order.status] || `<span class="badge badge-gray">${order.status}</span>`;
+
+                    let itemRows = '';
+                    if (order.items && order.items.length > 0) {
+                        order.items.forEach(item => {
+                            itemRows += `
+                                <tr>
+                                    <td>
+                                        <div class="product-inline">
+                                            ${item.product_image
+                                                ? `<img src="/images/${item.product_image}" class="product-thumb" alt="${item.product_name}">`
+                                                : `<div class="product-fallback">☕</div>`
+                                            }
+                                            <span style="font-weight:600;">${item.product_name}</span>
+                                        </div>
+                                    </td>
+                                    <td>Rp ${parseInt(item.price).toLocaleString('id-ID')}</td>
+                                    <td>${item.quantity}x</td>
+                                    <td style="font-weight:600;">Rp ${parseInt(item.subtotal).toLocaleString('id-ID')}</td>
+                                </tr>`;
+                        });
+                    } else {
+                        itemRows = `<tr><td colspan="4" class="empty-state" style="padding:16px;">Data item tidak tersedia (pesanan lama)</td></tr>`;
+                    }
+
+                    const kurirRow = order.order_type === 'take-away' && order.ongkir > 0
+                        ? `<tr>
+                                <td colspan="3" style="color:var(--text-muted);">🚚 Kurir: <strong>${order.courier_name} - ${order.courier_service}</strong></td>
+                                <td style="font-weight:600;">Rp ${parseInt(order.ongkir).toLocaleString('id-ID')}</td>
+                            </tr>`
+                        : '';
+
+                    html += `
+                        <div class="history-order-card">
+                            <div class="history-order-head">
+                                <div>
+                                    <span class="mono-code">${order.number}</span>
+                                    <span class="muted-text" style="margin-left:8px;">
+                                        ${order.created_at ? new Date(order.created_at).toLocaleDateString('id-ID', {day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '-'}
+                                    </span>
+                                </div>
+                                <div class="action-group">
+                                    <span class="badge badge-gray">${order.order_type ?? '-'}</span>
+                                    ${statusBadge}
+                                </div>
+                            </div>
+                            <div class="history-order-body">
+                                <table class="mini-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Produk</th>
+                                            <th>Harga</th>
+                                            <th>Qty</th>
+                                            <th>Subtotal</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${itemRows}
+                                        ${kurirRow}
+                                    </tbody>
+                                    <tfoot>
+                                        <tr>
+                                            <td colspan="3" style="text-align:right;">Total Pesanan</td>
+                                            <td>Rp ${parseInt(order.total_price).toLocaleString('id-ID')}</td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                            ${order.address && order.address !== '-'
+                                ? `<div class="history-order-foot">📍 ${order.address}</div>`
+                                : ''}
+                        </div>`;
+                });
+
+                document.getElementById('dpBody').innerHTML = html;
+            })
+            .catch(() => {
+                document.getElementById('dpBody').innerHTML = '<div class="empty-state" style="color:#c0392b;">Gagal memuat data. Coba lagi.</div>';
+            });
+        });
+
+        function filterPesanan() {
+            const status = document.getElementById('filterStatusPesanan').value;
+            document.querySelectorAll('#tabPesanan tbody tr[data-status]').forEach(row => {
+                row.style.display = (status === 'all' || row.dataset.status === status) ? '' : 'none';
+            });
+        }
+
+        document.addEventListener('click', function(e) {
+            const btn = e.target.closest('.btn-detail');
+            if (!btn) return;
+            const d = btn.dataset;
+            document.getElementById('detailNomor').textContent = '#' + (d.number || '-');
+            document.getElementById('detailNama').textContent = d.nama || '-';
+            document.getElementById('detailTelp').textContent = d.telp || '-';
+            document.getElementById('detailEmail').textContent = d.email || '-';
+            document.getElementById('detailTipe').textContent = d.tipe || '-';
+            document.getElementById('detailTotal').textContent = 'Rp ' + (d.total || '0');
+            document.getElementById('detailStatus').textContent = d.status || '-';
+            document.getElementById('detailAlamat').textContent = d.alamat || '-';
+            document.getElementById('detailCatatan').textContent = d.catatan || '-';
+            bukaModal('modalDetail');
+        });
+    </script>
+@endpush

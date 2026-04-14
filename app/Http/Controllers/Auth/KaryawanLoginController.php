@@ -22,11 +22,10 @@ class KaryawanLoginController extends Controller
             'password' => 'required',
         ]);
 
-        if (Auth::guard('staff')->attempt($credentials)) {
+        if (Auth::guard('karyawan')->attempt($credentials)) {
             $request->session()->regenerate();
-            $user = Auth::guard('staff')->user();
+            $user = Auth::guard('karyawan')->user();
 
-            // Update login terakhir (opsional)
             $user->update(['last_login_at' => now()]);
 
             if ($user->peran === 'admin') return redirect()->intended('/admin/karyawan');
@@ -38,42 +37,41 @@ class KaryawanLoginController extends Controller
     }
 
     // --- MANAJEMEN KARYAWAN (CRUD) ---
-    
- public function index(Request $request)
-{
-    $query = Karyawan::query();
 
-    // Filter peran
-    if ($request->filled('peran')) {
-        $query->where('peran', $request->peran);
+    public function index(Request $request)
+    {
+        $query = Karyawan::query();
+
+        if ($request->filled('peran')) {
+            $query->where('peran', $request->peran);
+        }
+
+        if ($request->filled('status')) {
+            $query->where('is_aktif', $request->status);
+        }
+
+        $karyawan = $query->paginate(10);
+
+        return view('admin.karyawan.index', compact('karyawan'));
     }
 
-    // Filter status
-    if ($request->filled('status')) {
-        $query->where('is_aktif', $request->status);
-    }
-
-    $karyawan = $query->paginate(10);
-
-    return view('admin.karyawan.index', compact('karyawan'));
-}
     public function create() {
         return view('admin.karyawan.tambah');
     }
 
     public function store(Request $request) {
         $data = $request->validate([
-            'nama' => 'required|max:100',
+            'nama'     => 'required|max:100',
             'username' => 'required|unique:karyawan,username|max:50',
             'password' => 'required|min:8|confirmed',
-            'peran' => 'required',
-            'email' => 'nullable|email',
-            'foto' => 'nullable|image|max:1024',
+            'peran'    => 'required',
+            'email'    => 'nullable|email',
+            'foto'     => 'nullable|image|max:1024',
         ]);
 
         $data['password'] = Hash::make($request->password);
         $data['is_aktif'] = $request->has('is_aktif') ? 1 : 0;
-        $data['shift'] = $request->shift;
+        $data['shift']    = $request->shift;
 
         if ($request->hasFile('foto')) {
             $data['foto'] = $request->file('foto')->store('karyawan', 'public');
@@ -90,17 +88,17 @@ class KaryawanLoginController extends Controller
 
     public function update(Request $request, $id) {
         $karyawan = Karyawan::findOrFail($id);
-        
+
         $request->validate([
-            'nama' => 'required',
-            'username' => 'required|unique:karyawan,username,'.$id,
+            'nama'     => 'required',
+            'username' => 'required|unique:karyawan,username,' . $id,
             'password' => 'nullable|min:8|confirmed',
         ]);
 
-        $karyawan->nama = $request->nama;
+        $karyawan->nama     = $request->nama;
         $karyawan->username = $request->username;
-        $karyawan->peran = $request->peran;
-        $karyawan->shift = $request->shift;
+        $karyawan->peran    = $request->peran;
+        $karyawan->shift    = $request->shift;
         $karyawan->is_aktif = $request->has('is_aktif') ? 1 : 0;
 
         if ($request->filled('password')) {
@@ -116,15 +114,15 @@ class KaryawanLoginController extends Controller
         return redirect()->route('admin.karyawan.index')->with('success', 'Data berhasil diubah!');
     }
 
-   public function destroy($id) {
-    $karyawan = Karyawan::findOrFail($id);
-    if ($karyawan->foto) Storage::disk('public')->delete($karyawan->foto);
-    $karyawan->forceDelete(); // ini hapus permanen
-    return back()->with('success', 'Karyawan berhasil dihapus!');
-}
+    public function destroy($id) {
+        $karyawan = Karyawan::findOrFail($id);
+        if ($karyawan->foto) Storage::disk('public')->delete($karyawan->foto);
+        $karyawan->forceDelete();
+        return back()->with('success', 'Karyawan berhasil dihapus!');
+    }
 
     public function logout() {
-        Auth::guard('staff')->logout();
+        Auth::guard('karyawan')->logout();
         return redirect('/login-staff');
     }
 }

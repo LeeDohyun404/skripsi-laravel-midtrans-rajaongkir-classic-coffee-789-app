@@ -12,21 +12,20 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        // Daftarin alias satpam admin_auth di sini!
         $middleware->alias([
-            'admin_auth' => \App\Http\Middleware\AdminAuth::class,
+            'admin_auth'    => \App\Http\Middleware\AdminAuth::class,
+            'auth.karyawan' => \App\Http\Middleware\AuthKaryawan::class,
+            'role.karyawan' => \App\Http\Middleware\RoleKaryawan::class,
         ]);
 
-        // ✅ TRUST ALL PROXIES (NGROK)
         $middleware->trustProxies(at: '*');
 
-        // ✅ EXCLUDE EMAIL VERIFICATION & MIDTRANS DARI CSRF
         $middleware->validateCsrfTokens(except: [
             'api/midtrans-callback',
-            'email/*',  // ✅ TAMBAH INI
+            'email/*',
         ]);
 
-        $middleware->statefulApi(); 
+        $middleware->statefulApi();
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

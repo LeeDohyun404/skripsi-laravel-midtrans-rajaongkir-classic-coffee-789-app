@@ -1,128 +1,177 @@
-{{-- resources/views/admin/karyawan/tambah.blade.php --}}
-@extends('layouts.app')
+@extends('layouts.karyawan')
 
 @section('title', 'Tambah Karyawan')
+@section('page-title', 'Tambah Karyawan')
+
+@section('sidebar-nav')
+    <span class="nav-section-label">Menu Utama</span>
+    <a href="{{ route('admin.dashboard') }}" class="nav-item">
+        <span class="nav-icon">🏠</span> Dashboard
+    </a>
+    <span class="nav-section-label">Manajemen</span>
+    <a href="{{ route('admin.karyawan.index') }}" class="nav-item active">
+        <span class="nav-icon">👥</span> Karyawan
+    </a>
+    <a href="{{ route('admin.pelanggan') }}" class="nav-item">
+        <span class="nav-icon">🧑‍🤝‍🧑</span> Pelanggan
+    </a>
+    <a href="{{ route('admin.stok') }}" class="nav-item">
+        <span class="nav-icon">📦</span> Stok
+    </a>
+    <a href="{{ route('admin.history') }}" class="nav-item">
+        <span class="nav-icon">📋</span> History Transaksi
+    </a>
+@endsection
 
 @section('content')
-<div class="container-fluid">
-    <div class="d-flex align-items-center mb-4 gap-2">
-        <a href="{{ route('admin.karyawan.index') }}" class="btn btn-sm btn-outline-secondary">
-            <i class="bi bi-arrow-left"></i>
-        </a>
-        <h4 class="fw-bold mb-0">Tambah Karyawan</h4>
-    </div>
 
-    <div class="card shadow-sm" style="max-width:640px">
-        <div class="card-body">
-            <form method="POST" action="{{ route('admin.karyawan.store') }}" enctype="multipart/form-data">
-                @csrf
-
-                {{-- Nama --}}
-                <div class="mb-3">
-                    <label class="form-label fw-semibold">Nama Lengkap <span class="text-danger">*</span></label>
-                    <input type="text" name="nama" class="form-control @error('nama') is-invalid @enderror"
-                           value="{{ old('nama') }}" required maxlength="100">
-                    @error('nama') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                </div>
-
-                {{-- Username --}}
-                <div class="mb-3">
-                    <label class="form-label fw-semibold">Username <span class="text-danger">*</span></label>
-                    <input type="text" name="username" class="form-control @error('username') is-invalid @enderror"
-                           value="{{ old('username') }}" required maxlength="50">
-                    @error('username') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                </div>
-
-                {{-- Email --}}
-                <div class="mb-3">
-                    <label class="form-label fw-semibold">Email</label>
-                    <input type="email" name="email" class="form-control @error('email') is-invalid @enderror"
-                           value="{{ old('email') }}" maxlength="150">
-                    @error('email') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                </div>
-
-                {{-- No HP --}}
-                <div class="mb-3">
-                    <label class="form-label fw-semibold">No. HP</label>
-                    <input type="text" name="no_hp" class="form-control @error('no_hp') is-invalid @enderror"
-                           value="{{ old('no_hp') }}" maxlength="20">
-                    @error('no_hp') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                </div>
-
-                {{-- Peran --}}
-                <div class="mb-3">
-                    <label class="form-label fw-semibold">Peran <span class="text-danger">*</span></label>
-                    <select name="peran" class="form-select @error('peran') is-invalid @enderror" required id="selectPeran">
-                        <option value="">-- Pilih Peran --</option>
-                        <option value="admin"    {{ old('peran') == 'admin'    ? 'selected' : '' }}>Admin (Super User)</option>
-                        <option value="operator" {{ old('peran') == 'operator' ? 'selected' : '' }}>Operator (Back Office)</option>
-                        <option value="kasir"    {{ old('peran') == 'kasir'    ? 'selected' : '' }}>Kasir (Front Liner)</option>
-                    </select>
-                    @error('peran') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                </div>
-
-                {{-- Shift (muncul bila kasir / operator) --}}
-                <div class="mb-3" id="fieldShift" style="display:none">
-                    <label class="form-label fw-semibold">Shift</label>
-                    <select name="shift" class="form-select">
-                        <option value="">-- Pilih Shift --</option>
-                        <option value="pagi"  {{ old('shift') == 'pagi'  ? 'selected' : '' }}>Pagi</option>
-                        <option value="siang" {{ old('shift') == 'siang' ? 'selected' : '' }}>Siang</option>
-                        <option value="malam" {{ old('shift') == 'malam' ? 'selected' : '' }}>Malam</option>
-                    </select>
-                </div>
-
-                {{-- Password --}}
-                <div class="mb-3">
-                    <label class="form-label fw-semibold">Password <span class="text-danger">*</span></label>
-                    <input type="password" name="password" class="form-control @error('password') is-invalid @enderror"
-                           required minlength="8">
-                    <div class="form-text">Minimal 8 karakter.</div>
-                    @error('password') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                </div>
-
-                {{-- Konfirmasi Password --}}
-                <div class="mb-3">
-                    <label class="form-label fw-semibold">Konfirmasi Password <span class="text-danger">*</span></label>
-                    <input type="password" name="password_confirmation" class="form-control" required minlength="8">
-                </div>
-
-                {{-- Foto --}}
-                <div class="mb-3">
-                    <label class="form-label fw-semibold">Foto Profil</label>
-                    <input type="file" name="foto" class="form-control @error('foto') is-invalid @enderror"
-                           accept="image/png,image/jpeg,image/jpg">
-                    <div class="form-text">Format: JPG/PNG, maks 1 MB.</div>
-                    @error('foto') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                </div>
-
-                {{-- Status --}}
-                <div class="mb-4 form-check">
-                    <input class="form-check-input" type="checkbox" name="is_aktif" id="isAktif"
-                           value="1" {{ old('is_aktif', '1') ? 'checked' : '' }}>
-                    <label class="form-check-label fw-semibold" for="isAktif">Akun Aktif</label>
-                </div>
-
-                <div class="d-flex gap-2">
-                    <button type="submit" class="btn btn-primary">
-                        <i class="bi bi-save me-1"></i> Simpan
-                    </button>
-                    <a href="{{ route('admin.karyawan.index') }}" class="btn btn-outline-secondary">Batal</a>
-                </div>
-            </form>
+{{-- Info banner --}}
+<div style="background:#fff8ee;border:1px solid #e8d5a3;border-left:4px solid #c8a96e;border-radius:10px;padding:16px 20px;margin-bottom:24px;display:flex;gap:14px;align-items:flex-start;">
+    <span style="font-size:20px;">📧</span>
+    <div>
+        <div style="font-size:13px;font-weight:600;color:#3d2410;margin-bottom:4px;">Sistem Undangan via Email</div>
+        <div style="font-size:13px;color:#7a5c3a;line-height:1.7;">
+            Setelah karyawan ditambahkan, sistem akan otomatis mengirim email undangan ke alamat yang Anda isi.
+            Karyawan kemudian membuat passwordnya sendiri lewat link aktivasi di email tersebut.
+            <strong>Anda tidak perlu membuat password untuk karyawan.</strong>
         </div>
     </div>
 </div>
 
+<div class="card" style="max-width:640px;">
+    <div class="card-header">
+        <h2>Data Karyawan Baru</h2>
+    </div>
+    <div class="card-body">
+        <form method="POST" action="{{ route('admin.karyawan.store') }}">
+            @csrf
+
+            <div class="form-grid">
+
+                {{-- Nama --}}
+                <div class="form-group full">
+                    <label for="nama">Nama Lengkap <span style="color:#c0392b;">*</span></label>
+                    <input
+                        type="text"
+                        id="nama"
+                        name="nama"
+                        value="{{ old('nama') }}"
+                        placeholder="Masukkan nama lengkap"
+                        class="{{ $errors->has('nama') ? 'is-error' : '' }}"
+                        required
+                    >
+                    @error('nama')
+                        <span class="field-error">{{ $message }}</span>
+                    @enderror
+                </div>
+
+                {{-- Email --}}
+                <div class="form-group full">
+                    <label for="email">Email Karyawan <span style="color:#c0392b;">*</span></label>
+                    <input
+                        type="email"
+                        id="email"
+                        name="email"
+                        value="{{ old('email') }}"
+                        placeholder="nama@email.com"
+                        class="{{ $errors->has('email') ? 'is-error' : '' }}"
+                        required
+                    >
+                    <span style="font-size:12px;color:var(--text-muted);">
+                        Link aktivasi akan dikirim ke email ini.
+                    </span>
+                    @error('email')
+                        <span class="field-error">{{ $message }}</span>
+                    @enderror
+                </div>
+
+                {{-- No HP --}}
+                <div class="form-group">
+                    <label for="no_hp">No. HP</label>
+                    <input
+                        type="tel"
+                        id="no_hp"
+                        name="no_hp"
+                        value="{{ old('no_hp') }}"
+                        placeholder="08xx-xxxx-xxxx"
+                    >
+                    @error('no_hp')
+                        <span class="field-error">{{ $message }}</span>
+                    @enderror
+                </div>
+
+                {{-- Peran --}}
+                <div class="form-group">
+                    <label for="peran">Peran <span style="color:#c0392b;">*</span></label>
+                    <select id="peran" name="peran" required>
+                        <option value="" disabled {{ !old('peran') ? 'selected' : '' }}>Pilih peran...</option>
+                        <option value="admin"    {{ old('peran') === 'admin'    ? 'selected' : '' }}>Admin</option>
+                        <option value="operator" {{ old('peran') === 'operator' ? 'selected' : '' }}>Operator</option>
+                        <option value="kasir"    {{ old('peran') === 'kasir'    ? 'selected' : '' }}>Kasir</option>
+                    </select>
+                    @error('peran')
+                        <span class="field-error">{{ $message }}</span>
+                    @enderror
+                </div>
+
+                {{-- Alamat --}}
+                <div class="form-group full">
+                    <label for="alamat">Alamat</label>
+                    <textarea
+                        id="alamat"
+                        name="alamat"
+                        rows="3"
+                        placeholder="Alamat tempat tinggal (opsional)"
+                        style="resize:vertical;"
+                    >{{ old('alamat') }}</textarea>
+                    @error('alamat')
+                        <span class="field-error">{{ $message }}</span>
+                    @enderror
+                </div>
+
+            </div>
+
+            {{-- Peran info card --}}
+            <div id="peranInfo" style="display:none;background:var(--cream-dark);border-radius:10px;padding:14px 18px;margin-top:20px;font-size:13px;color:var(--text-muted);line-height:1.7;">
+                <span id="peranInfoText"></span>
+            </div>
+
+            {{-- Actions --}}
+            <div style="display:flex;gap:12px;margin-top:28px;padding-top:20px;border-top:1px solid var(--cream-dark);">
+                <button type="submit" class="btn btn-primary">
+                    📧 Simpan & Kirim Undangan
+                </button>
+                <a href="{{ route('admin.karyawan.index') }}" class="btn btn-outline">
+                    Batal
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@endsection
+
 @push('scripts')
 <script>
-const selectPeran = document.getElementById('selectPeran');
-const fieldShift  = document.getElementById('fieldShift');
-selectPeran.addEventListener('change', function () {
-    fieldShift.style.display = ['operator','kasir'].includes(this.value) ? 'block' : 'none';
-});
-// Tampilkan shift jika old value ada
-if (['operator','kasir'].includes(selectPeran.value)) fieldShift.style.display = 'block';
+    const peranDesc = {
+        admin:    '👑 Admin dapat mengakses semua fitur: manajemen karyawan, pelanggan, stok, dan history transaksi.',
+        operator: '📦 Operator dapat mengelola stok barang dan inventori.',
+        kasir:    '🧾 Kasir dapat memproses transaksi penjualan.',
+    };
+
+    document.getElementById('peran').addEventListener('change', function () {
+        const info = document.getElementById('peranInfo');
+        const text = document.getElementById('peranInfoText');
+        if (this.value && peranDesc[this.value]) {
+            text.textContent = peranDesc[this.value];
+            info.style.display = 'block';
+        } else {
+            info.style.display = 'none';
+        }
+    });
+
+    // Trigger on load if old value exists
+    const peranEl = document.getElementById('peran');
+    if (peranEl.value) peranEl.dispatchEvent(new Event('change'));
 </script>
 @endpush
-@endsection

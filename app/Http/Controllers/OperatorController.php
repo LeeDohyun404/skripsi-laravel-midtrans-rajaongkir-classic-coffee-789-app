@@ -8,6 +8,30 @@ use Illuminate\Support\Facades\Schema;
 
 class OperatorController extends Controller
 {
+    public function dashboard()
+    {
+        $totalProduk = DB::table('products')->count();
+        $stokRendah = DB::table('products')->whereBetween('stock', [1, 10])->count();
+        $stokAman = DB::table('products')->where('stock', '>', 10)->count();
+        $stokHampirHabis = DB::table('products')
+            ->select('name as nama_produk', 'category as kategori', 'stock as stok')
+            ->whereBetween('stock', [1, 10])
+            ->orderBy('stock')
+            ->limit(5)
+            ->get()
+            ->map(function ($item) {
+                $item->satuan = 'pcs';
+                return $item;
+            });
+
+        return view('operator.dashboard', compact(
+            'totalProduk',
+            'stokRendah',
+            'stokAman',
+            'stokHampirHabis'
+        ));
+    }
+
     public function stok(Request $request)
     {
         $query = DB::table('products');
@@ -104,6 +128,7 @@ class OperatorController extends Controller
 
         return back()->with('success', 'Stok berhasil diperbarui!');
     }
+
     public function destroyProduk($id)
     {
         DB::table('products')->where('id', $id)->delete();

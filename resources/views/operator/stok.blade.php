@@ -1,314 +1,704 @@
-{{-- resources/views/operator/stok.blade.php --}}
-@extends('layouts.app')
+@extends('layouts.karyawan')
 
-@section('title', 'Kelola Stok')
+@section('title', 'Dashboard Operator')
+@section('page-title', 'Manajemen Stok')
+
+@section('sidebar-nav')
+    <span class="nav-section-label">Menu Utama</span>
+    <a href="{{ route('operator.dashboard') }}" class="nav-item {{ request()->routeIs('operator.dashboard') ? 'active' : '' }}">
+        <span class="nav-icon">🏠</span> Dashboard
+    </a>
+    <span class="nav-section-label">Inventori</span>
+    <a href="{{ route('operator.stok') }}" class="nav-item {{ request()->routeIs('operator.stok') ? 'active' : '' }}">
+        <span class="nav-icon">📦</span> Manajemen Stok
+    </a>
+@endsection
+
+@push('styles')
+    <style>
+        .page-toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+
+        .page-toolbar p {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin: 0;
+        }
+
+        .toolbar-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .panel-card {
+            background: white;
+            border: 1px solid var(--cream-dark);
+            border-radius: 18px;
+            box-shadow: 0 10px 24px rgba(61, 36, 16, 0.08);
+            overflow: hidden;
+        }
+
+        .panel-card + .panel-card {
+            margin-top: 18px;
+        }
+
+        .panel-card-body {
+            padding: 20px 22px;
+        }
+
+        .filter-grid {
+            display: grid;
+            grid-template-columns: 1.6fr 1fr 1fr auto;
+            gap: 12px;
+            align-items: end;
+        }
+
+        .field-label {
+            display: block;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+
+        .form-control-modern,
+        .form-select-modern,
+        .form-file-modern {
+            width: 100%;
+            padding: 11px 14px;
+            border-radius: 12px;
+            border: 1px solid var(--cream-dark);
+            background: #fff;
+            color: var(--text);
+            font-size: 14px;
+            font-family: 'DM Sans', sans-serif;
+        }
+
+        .form-control-modern:focus,
+        .form-select-modern:focus,
+        .form-file-modern:focus {
+            outline: none;
+            border-color: var(--gold);
+            box-shadow: 0 0 0 3px rgba(200, 169, 110, 0.14);
+        }
+
+        .product-cell {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .product-thumb {
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+            object-fit: cover;
+            border: 1px solid var(--cream-dark);
+            flex-shrink: 0;
+        }
+
+        .product-fallback {
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: #f5ead8;
+            color: var(--brown-mid);
+            border: 1px solid var(--cream-dark);
+            flex-shrink: 0;
+            font-size: 18px;
+        }
+
+        .price-text {
+            font-family: 'Playfair Display', serif;
+            color: var(--brown-mid);
+            white-space: nowrap;
+        }
+
+        .stock-text {
+            font-weight: 700;
+        }
+
+        .stock-text.safe {
+            color: #2f855a;
+        }
+
+        .stock-text.low {
+            color: #c28a22;
+        }
+
+        .stock-text.empty {
+            color: #c05656;
+        }
+
+        .action-group {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 32px;
+        }
+
+        .flash-alert {
+            border-radius: 14px;
+            padding: 14px 16px;
+            margin-bottom: 18px;
+            border: 1px solid;
+            font-size: 14px;
+        }
+
+        .flash-alert.success {
+            background: #edf7f0;
+            color: #276749;
+            border-color: #b7dfc4;
+        }
+
+        .flash-alert.error {
+            background: #fff3f3;
+            color: #c05656;
+            border-color: #f0c2c2;
+        }
+
+        .pagination-wrap {
+            padding: 16px 20px;
+            border-top: 1px solid var(--cream-dark);
+            overflow-x: auto;
+        }
+
+        .pagination-wrap nav {
+            width: 100%;
+        }
+
+        .pagination-wrap .flex {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .pagination-wrap .hidden.sm\:flex-1,
+        .pagination-wrap .sm\:hidden {
+            display: none !important;
+        }
+
+        .pagination-wrap .sm\:flex {
+            display: flex !important;
+        }
+
+        .pagination-wrap .sm\:items-center {
+            align-items: center !important;
+        }
+
+        .pagination-wrap .sm\:justify-between {
+            justify-content: space-between !important;
+        }
+
+        .pagination-wrap .relative {
+            position: relative;
+        }
+
+        .pagination-wrap .z-0 {
+            z-index: 0;
+        }
+
+        .pagination-wrap .inline-flex {
+            display: inline-flex;
+        }
+
+        .pagination-wrap .shadow-sm {
+            box-shadow: none !important;
+        }
+
+        .pagination-wrap .rounded-md {
+            border-radius: 12px;
+        }
+
+        .pagination-wrap .text-sm {
+            font-size: 13px;
+        }
+
+        .pagination-wrap .text-gray-700,
+        .pagination-wrap .text-gray-500 {
+            color: var(--text-muted) !important;
+        }
+
+        .pagination-wrap .font-medium {
+            font-weight: 500;
+        }
+
+        .pagination-wrap svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        .pagination-wrap a,
+        .pagination-wrap span[aria-current="page"] span,
+        .pagination-wrap span[aria-disabled="true"] span {
+            min-width: 40px;
+            height: 40px;
+            padding: 0 14px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid var(--cream-dark);
+            background: white;
+            color: var(--brown-mid);
+            text-decoration: none;
+            transition: all 0.15s ease;
+        }
+
+        .pagination-wrap .relative.inline-flex.items-center.px-2.py-2,
+        .pagination-wrap .relative.inline-flex.items-center.px-4.py-2 {
+            border-radius: 10px;
+        }
+
+        .pagination-wrap a:hover {
+            background: #fdf9f4;
+            border-color: var(--gold);
+            color: var(--brown-dark);
+        }
+
+        .pagination-wrap span[aria-current="page"] span {
+            background: var(--brown-mid);
+            color: var(--gold-light);
+            border-color: var(--gold);
+            font-weight: 600;
+        }
+
+        .pagination-wrap span[aria-disabled="true"] span {
+            color: #b8aa97;
+            background: #f7f1e7;
+            cursor: not-allowed;
+        }
+
+        .modal-panel {
+            position: fixed;
+            inset: 0;
+            background: rgba(30, 17, 8, 0.45);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            z-index: 9999;
+        }
+
+        .modal-panel.show {
+            display: flex;
+        }
+
+        .modal-card {
+            width: 100%;
+            max-width: 620px;
+            background: white;
+            border-radius: 18px;
+            border: 1px solid var(--cream-dark);
+            box-shadow: 0 20px 42px rgba(0, 0, 0, 0.14);
+            overflow: hidden;
+        }
+
+        .modal-card.modal-sm {
+            max-width: 460px;
+        }
+
+        .modal-card-header,
+        .modal-card-footer {
+            padding: 18px 22px;
+            background: #fffdf9;
+        }
+
+        .modal-card-header {
+            border-bottom: 1px solid var(--cream-dark);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .modal-card-footer {
+            border-top: 1px solid var(--cream-dark);
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .modal-card-header h3 {
+            margin: 0;
+            color: var(--brown-mid);
+            font-size: 21px;
+            font-weight: 400;
+            font-family: 'Playfair Display', serif;
+        }
+
+        .modal-card-body {
+            padding: 22px;
+        }
+
+        .form-grid {
+            display: grid;
+            gap: 16px;
+        }
+
+        .input-group-modern {
+            display: flex;
+            align-items: stretch;
+            width: 100%;
+        }
+
+        .input-group-modern span {
+            padding: 11px 14px;
+            border: 1px solid var(--cream-dark);
+            border-right: 0;
+            border-radius: 12px 0 0 12px;
+            background: #f8f2e8;
+            color: var(--brown-mid);
+            font-size: 14px;
+        }
+
+        .input-group-modern input {
+            border-radius: 0 12px 12px 0;
+        }
+
+        .modal-close {
+            border: 0;
+            background: transparent;
+            color: var(--text-muted);
+            font-size: 22px;
+            cursor: pointer;
+            line-height: 1;
+        }
+
+        .product-note {
+            color: var(--text-muted);
+            margin: 0 0 14px;
+            font-size: 14px;
+        }
+
+        @media (max-width: 900px) {
+            .filter-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .pagination-wrap .flex {
+                justify-content: center !important;
+            }
+        }
+    </style>
+@endpush
 
 @section('content')
-<div class="container-fluid">
-
-    {{-- Header --}}
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h4 class="fw-bold mb-0">
-            <i class="bi bi-box-seam me-2 text-primary"></i>Kelola Stok & Produk
-        </h4>
-        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalTambahProduk">
-            <i class="bi bi-plus-circle me-1"></i> Tambah Produk
-        </button>
+    <div class="page-toolbar">
+        <div>
+            <h2 style="font-family:'Playfair Display', serif;font-size:24px;font-weight:400;color:var(--brown-mid);margin-bottom:6px;">
+                Kelola Stok & Produk
+            </h2>
+            <p>Atur inventori, pantau stok, dan kelola data produk dalam satu halaman.</p>
+        </div>
+        <div class="toolbar-actions">
+            <button type="button" class="btn btn-primary btn-sm" onclick="bukaModal('modalTambahProduk')">+ Tambah Produk</button>
+        </div>
     </div>
 
-    {{-- Alert --}}
     @if(session('success'))
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            {{ session('success') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    @endif
-    @if(session('error'))
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            {{ session('error') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
+        <div class="flash-alert success">{{ session('success') }}</div>
     @endif
 
-    {{-- Statistik --}}
-    <div class="row g-3 mb-4">
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm text-center p-3">
-                <div class="text-primary fs-2 fw-bold">{{ $totalProduk }}</div>
-                <div class="text-muted small">Total Produk</div>
-            </div>
+    @if(session('error'))
+        <div class="flash-alert error">{{ session('error') }}</div>
+    @endif
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon">📦</div>
+            <div class="stat-value">{{ $totalProduk }}</div>
+            <div class="stat-label">Total Produk</div>
         </div>
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm text-center p-3">
-                <div class="text-success fs-2 fw-bold">{{ $stokAman }}</div>
-                <div class="text-muted small">Stok Aman</div>
-            </div>
+        <div class="stat-card">
+            <div class="stat-icon">✅</div>
+            <div class="stat-value">{{ $stokAman }}</div>
+            <div class="stat-label">Stok Aman</div>
         </div>
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm text-center p-3">
-                <div class="text-warning fs-2 fw-bold">{{ $stokRendah }}</div>
-                <div class="text-muted small">Stok Rendah</div>
-            </div>
+        <div class="stat-card">
+            <div class="stat-icon">⚠️</div>
+            <div class="stat-value">{{ $stokRendah }}</div>
+            <div class="stat-label">Stok Rendah</div>
         </div>
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm text-center p-3">
-                <div class="text-danger fs-2 fw-bold">{{ $stokHabis }}</div>
-                <div class="text-muted small">Stok Habis</div>
-            </div>
+        <div class="stat-card">
+            <div class="stat-icon">⛔</div>
+            <div class="stat-value">{{ $stokHabis }}</div>
+            <div class="stat-label">Stok Habis</div>
         </div>
     </div>
 
-    {{-- Filter & Search --}}
-    <div class="card shadow-sm mb-3">
-        <div class="card-body py-2">
-            <form method="GET" class="row g-2 align-items-center">
-                <div class="col-md-4">
-                    <input type="text" name="search" value="{{ request('search') }}"
-                           class="form-control form-control-sm" placeholder="Cari nama produk...">
+    <div class="panel-card">
+        <div class="panel-card-body">
+            <form method="GET" class="filter-grid">
+                <div>
+                    <label class="field-label">Cari Produk</label>
+                    <input type="text" name="search" value="{{ request('search') }}" class="form-control-modern" placeholder="Cari nama produk...">
                 </div>
-                <div class="col-auto">
-                    <select name="kategori" class="form-select form-select-sm" onchange="this.form.submit()">
+                <div>
+                    <label class="field-label">Kategori</label>
+                    <select name="kategori" class="form-select-modern" onchange="this.form.submit()">
                         <option value="">Semua Kategori</option>
                         @foreach($kategoriList as $kat)
                             <option value="{{ $kat }}" {{ request('kategori') == $kat ? 'selected' : '' }}>{{ $kat }}</option>
                         @endforeach
                     </select>
                 </div>
-                <div class="col-auto">
-                    <select name="stok_filter" class="form-select form-select-sm" onchange="this.form.submit()">
+                <div>
+                    <label class="field-label">Filter Stok</label>
+                    <select name="stok_filter" class="form-select-modern" onchange="this.form.submit()">
                         <option value="">Semua Stok</option>
-                        <option value="aman"   {{ request('stok_filter') == 'aman'   ? 'selected' : '' }}>Stok Aman</option>
+                        <option value="aman" {{ request('stok_filter') == 'aman' ? 'selected' : '' }}>Stok Aman</option>
                         <option value="rendah" {{ request('stok_filter') == 'rendah' ? 'selected' : '' }}>Stok Rendah</option>
-                        <option value="habis"  {{ request('stok_filter') == 'habis'  ? 'selected' : '' }}>Stok Habis</option>
+                        <option value="habis" {{ request('stok_filter') == 'habis' ? 'selected' : '' }}>Stok Habis</option>
                     </select>
                 </div>
-                <div class="col-auto">
-                    <button type="submit" class="btn btn-sm btn-outline-secondary">
-                        <i class="bi bi-search"></i> Cari
-                    </button>
+                <div>
+                    <label class="field-label">&nbsp;</label>
+                    <button type="submit" class="btn btn-outline btn-sm">Cari</button>
                 </div>
             </form>
         </div>
     </div>
 
-    {{-- Tabel Produk --}}
-    <div class="card shadow-sm">
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                    <thead class="table-light">
-                        <tr>
-                            <th width="50">#</th>
-                            <th>Produk</th>
-                            <th>Kategori</th>
-                            <th>Harga</th>
-                            <th>Stok</th>
-                            <th>Status</th>
-                            <th width="150">Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse($products as $i => $p)
+    <div class="card" style="margin-top:18px;">
+        <div class="card-header">
+            <h2>Daftar Produk</h2>
+        </div>
+        <div style="padding:0;overflow-x:auto;">
+            <table>
+                <thead>
+                    <tr>
+                        <th width="50">#</th>
+                        <th>Produk</th>
+                        <th>Kategori</th>
+                        <th>Harga</th>
+                        <th>Stok</th>
+                        <th>Status</th>
+                        <th width="210">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($products as $i => $p)
                         <tr>
                             <td>{{ $products->firstItem() + $i }}</td>
                             <td>
-                                <div class="d-flex align-items-center gap-2">
+                                <div class="product-cell">
                                     @if($p->image_url)
-                                        <img src="{{ asset('images/'.$p->image_url) }}" width="40" height="40"
-                                             style="object-fit:cover;border-radius:6px">
+                                        <img src="{{ asset('images/'.$p->image_url) }}" alt="{{ $p->name }}" class="product-thumb">
                                     @else
-                                        <div class="bg-secondary rounded d-flex align-items-center justify-content-center"
-                                             style="width:40px;height:40px;font-size:18px">
-                                            <i class="bi bi-box text-white"></i>
-                                        </div>
+                                        <div class="product-fallback">📦</div>
                                     @endif
-                                    <span class="fw-semibold">{{ $p->name }}</span>
+                                    <span style="font-weight:600;">{{ $p->name }}</span>
                                 </div>
                             </td>
-                            <td><span class="badge bg-light text-dark border">{{ $p->category ?? '-' }}</span></td>
-                            <td>Rp {{ number_format($p->price, 0, ',', '.') }}</td>
                             <td>
-                                <span class="fw-bold {{ $p->stock <= 0 ? 'text-danger' : ($p->stock <= 10 ? 'text-warning' : 'text-success') }}">
+                                <span class="badge badge-gray">{{ $p->category ?? '-' }}</span>
+                            </td>
+                            <td>
+                                <span class="price-text">Rp {{ number_format($p->price, 0, ',', '.') }}</span>
+                            </td>
+                            <td>
+                                <span class="stock-text {{ ($p->stock ?? 0) <= 0 ? 'empty' : (($p->stock ?? 0) <= 10 ? 'low' : 'safe') }}">
                                     {{ $p->stock ?? 0 }}
                                 </span>
                             </td>
                             <td>
                                 @if(($p->stock ?? 0) <= 0)
-                                    <span class="badge bg-danger">Habis</span>
-                                @elseif($p->stock <= 10)
-                                    <span class="badge bg-warning text-dark">Rendah</span>
+                                    <span class="badge badge-red">Habis</span>
+                                @elseif(($p->stock ?? 0) <= 10)
+                                    <span class="badge badge-gold">Rendah</span>
                                 @else
-                                    <span class="badge bg-success">Aman</span>
+                                    <span class="badge badge-green">Aman</span>
                                 @endif
                             </td>
                             <td>
-                                <button class="btn btn-sm btn-outline-success"
-                                        onclick="modalUpdateStok({{ $p->id }}, '{{ $p->name }}', {{ $p->stock ?? 0 }})"
-                                        title="Update Stok">
-                                    <i class="bi bi-arrow-repeat"></i> Stok
-                                </button>
-                                <button class="btn btn-sm btn-outline-primary"
-                                        onclick="modalEditProduk({{ $p->id }}, '{{ addslashes($p->name) }}', {{ $p->price }}, '{{ $p->category }}')"
-                                        title="Edit">
-                                    <i class="bi bi-pencil"></i>
-                                </button>
-                                <form method="POST" action="{{ route('operator.produk.hapus', $p->id) }}"
-                                    style="display:inline"
-                                    onsubmit="return confirm('Hapus produk {{ addslashes($p->name) }}?')">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Hapus">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
-                                </form>
+                                <div class="action-group">
+                                    <button type="button" class="btn btn-outline btn-sm" onclick="modalUpdateStok({{ $p->id }}, @js($p->name), {{ $p->stock ?? 0 }})">Stok</button>
+                                    <button type="button" class="btn btn-primary btn-sm" onclick="modalEditProduk({{ $p->id }}, @js($p->name), {{ $p->price }}, @js($p->category))">Edit</button>
+                                    <form method="POST" action="{{ route('operator.produk.hapus', $p->id) }}" style="display:inline" onsubmit="return confirm('Hapus produk {{ addslashes($p->name) }}?')">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="btn btn-danger btn-sm">Hapus</button>
+                                    </form>
+                                </div>
                             </td>
                         </tr>
-                        @empty
+                    @empty
                         <tr>
-                            <td colspan="7" class="text-center py-4 text-muted">
-                                <i class="bi bi-inbox fs-4 d-block mb-1"></i>
-                                Belum ada produk.
-                            </td>
+                            <td colspan="7" class="empty-state">Belum ada produk.</td>
                         </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
-            <div class="p-3">
-                {{ $products->links() }}
-            </div>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+        <div class="pagination-wrap">
+            {{ $products->links() }}
         </div>
     </div>
 
-</div>
-
-{{-- Modal Tambah Produk --}}
-<div class="modal fade" id="modalTambahProduk" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
+    <div class="modal-panel" id="modalTambahProduk">
+        <div class="modal-card">
             <form method="POST" action="{{ route('operator.produk.store') }}" enctype="multipart/form-data">
                 @csrf
-                <div class="modal-header">
-                    <h5 class="modal-title"><i class="bi bi-plus-circle me-2"></i>Tambah Produk</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <div class="modal-card-header">
+                    <h3>Tambah Produk</h3>
+                    <button type="button" class="modal-close" onclick="tutupModal('modalTambahProduk')">&times;</button>
                 </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Nama Produk</label>
-                        <input type="text" name="name" class="form-control" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Harga</label>
-                        <div class="input-group">
-                            <span class="input-group-text">Rp</span>
-                            <input type="number" name="price" class="form-control" required min="0">
+                <div class="modal-card-body">
+                    <div class="form-grid">
+                        <div>
+                            <label class="field-label">Nama Produk</label>
+                            <input type="text" name="name" class="form-control-modern" required>
+                        </div>
+                        <div>
+                            <label class="field-label">Harga</label>
+                            <div class="input-group-modern">
+                                <span>Rp</span>
+                                <input type="number" name="price" class="form-control-modern" required min="0">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="field-label">Kategori</label>
+                            <select name="category" class="form-select-modern" required>
+                                <option value="" disabled selected>-- Pilih Kategori --</option>
+                                <option value="Makanan">Makanan</option>
+                                <option value="Minuman">Minuman</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="field-label">Stok Awal</label>
+                            <input type="number" name="stock" class="form-control-modern" value="0" min="0">
+                        </div>
+                        <div>
+                            <label class="field-label">Foto Produk</label>
+                            <input type="file" name="image" class="form-file-modern" accept="image/*">
                         </div>
                     </div>
-                    {{-- SESUDAH --}}
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Kategori</label>
-                        <select name="category" class="form-select" required>
-                            <option value="" disabled selected>-- Pilih Kategori --</option>
-                            <option value="Makanan">Makanan</option>
-                            <option value="Minuman">Minuman</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Stok Awal</label>
-                        <input type="number" name="stock" class="form-control" value="0" min="0">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Foto Produk</label>
-                        <input type="file" name="image" class="form-control" accept="image/*">
-                    </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                    <button type="submit" class="btn btn-primary">Simpan</button>
+                <div class="modal-card-footer">
+                    <button type="button" class="btn btn-outline btn-sm" onclick="tutupModal('modalTambahProduk')">Batal</button>
+                    <button type="submit" class="btn btn-primary btn-sm">Simpan</button>
                 </div>
             </form>
         </div>
     </div>
-</div>
 
-{{-- Modal Update Stok --}}
-<div class="modal fade" id="modalStok" tabindex="-1">
-    <div class="modal-dialog modal-sm">
-        <div class="modal-content">
+    <div class="modal-panel" id="modalStok">
+        <div class="modal-card modal-sm">
             <form method="POST" action="{{ route('operator.stok.update') }}">
                 @csrf
                 <input type="hidden" name="product_id" id="stokProductId">
-                <div class="modal-header">
-                    <h5 class="modal-title">Update Stok</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <div class="modal-card-header">
+                    <h3>Update Stok</h3>
+                    <button type="button" class="modal-close" onclick="tutupModal('modalStok')">&times;</button>
                 </div>
-                <div class="modal-body">
-                    <p class="text-muted mb-2">Produk: <strong id="stokNamaProduk"></strong></p>
-                    <label class="form-label fw-semibold">Stok Baru</label>
-                    <input type="number" name="stock" id="stokJumlah" class="form-control" min="0" required>
+                <div class="modal-card-body">
+                    <p class="product-note">Produk: <strong id="stokNamaProduk"></strong></p>
+                    <div>
+                        <label class="field-label">Stok Baru</label>
+                        <input type="number" name="stock" id="stokJumlah" class="form-control-modern" min="0" required>
+                    </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                    <button type="submit" class="btn btn-success">Update</button>
+                <div class="modal-card-footer">
+                    <button type="button" class="btn btn-outline btn-sm" onclick="tutupModal('modalStok')">Batal</button>
+                    <button type="submit" class="btn btn-primary btn-sm">Update</button>
                 </div>
             </form>
         </div>
     </div>
-</div>
 
-{{-- Modal Edit Produk --}}
-<div class="modal fade" id="modalEditProduk" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
+    <div class="modal-panel" id="modalEditProduk">
+        <div class="modal-card">
             <form method="POST" action="{{ route('operator.produk.update') }}">
                 @csrf
                 @method('PUT')
                 <input type="hidden" name="id" id="editProdukId">
-                <div class="modal-header">
-                    <h5 class="modal-title"><i class="bi bi-pencil me-2"></i>Edit Produk</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <div class="modal-card-header">
+                    <h3>Edit Produk</h3>
+                    <button type="button" class="modal-close" onclick="tutupModal('modalEditProduk')">&times;</button>
                 </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Nama Produk</label>
-                        <input type="text" name="name" id="editNama" class="form-control" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Harga</label>
-                        <div class="input-group">
-                            <span class="input-group-text">Rp</span>
-                            <input type="number" name="price" id="editHarga" class="form-control" required>
+                <div class="modal-card-body">
+                    <div class="form-grid">
+                        <div>
+                            <label class="field-label">Nama Produk</label>
+                            <input type="text" name="name" id="editNama" class="form-control-modern" required>
+                        </div>
+                        <div>
+                            <label class="field-label">Harga</label>
+                            <div class="input-group-modern">
+                                <span>Rp</span>
+                                <input type="number" name="price" id="editHarga" class="form-control-modern" required min="0">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="field-label">Kategori</label>
+                            <input type="text" name="category" id="editKategori" class="form-control-modern">
                         </div>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Kategori</label>
-                        <input type="text" name="category" id="editKategori" class="form-control">
-                    </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                    <button type="submit" class="btn btn-primary">Simpan</button>
+                <div class="modal-card-footer">
+                    <button type="button" class="btn btn-outline btn-sm" onclick="tutupModal('modalEditProduk')">Batal</button>
+                    <button type="submit" class="btn btn-primary btn-sm">Simpan</button>
                 </div>
             </form>
         </div>
     </div>
-</div>
-
-<script>
-function modalUpdateStok(id, nama, stokSaat) {
-    document.getElementById('stokProductId').value = id;
-    document.getElementById('stokNamaProduk').textContent = nama;
-    document.getElementById('stokJumlah').value = stokSaat;
-    new bootstrap.Modal(document.getElementById('modalStok')).show();
-}
-
-function modalEditProduk(id, nama, harga, kategori) {
-    document.getElementById('editProdukId').value = id;
-    document.getElementById('editNama').value = nama;
-    document.getElementById('editHarga').value = harga;
-    document.getElementById('editKategori').value = kategori;
-    new bootstrap.Modal(document.getElementById('modalEditProduk')).show();
-}
-</script>
-
 @endsection
+
+@push('scripts')
+    <script>
+        function bukaModal(id) {
+            document.getElementById(id).classList.add('show');
+        }
+
+        function tutupModal(id) {
+            document.getElementById(id).classList.remove('show');
+        }
+
+        function modalUpdateStok(id, nama, stokSaat) {
+            document.getElementById('stokProductId').value = id;
+            document.getElementById('stokNamaProduk').textContent = nama;
+            document.getElementById('stokJumlah').value = stokSaat;
+            bukaModal('modalStok');
+        }
+
+        function modalEditProduk(id, nama, harga, kategori) {
+            document.getElementById('editProdukId').value = id;
+            document.getElementById('editNama').value = nama;
+            document.getElementById('editHarga').value = harga;
+            document.getElementById('editKategori').value = kategori ?? '';
+            bukaModal('modalEditProduk');
+        }
+
+        document.addEventListener('click', function (event) {
+            const overlay = event.target.closest('.modal-panel');
+            if (overlay && event.target === overlay) {
+                overlay.classList.remove('show');
+            }
+        });
+
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape') {
+                document.querySelectorAll('.modal-panel.show').forEach(modal => modal.classList.remove('show'));
+            }
+        });
+    </script>
+@endpush

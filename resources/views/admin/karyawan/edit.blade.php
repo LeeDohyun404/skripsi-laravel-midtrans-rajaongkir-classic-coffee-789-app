@@ -1,131 +1,193 @@
-{{-- resources/views/admin/karyawan/edit.blade.php --}}
-@extends('layouts.app')
+@extends('layouts.karyawan')
 
 @section('title', 'Edit Karyawan')
+@section('page-title', 'Edit Karyawan')
+
+@section('sidebar-nav')
+    <span class="nav-section-label">Menu Utama</span>
+    <a href="{{ route('admin.dashboard') }}" class="nav-item">
+        <span class="nav-icon">🏠</span> Dashboard
+    </a>
+    <span class="nav-section-label">Manajemen</span>
+    <a href="{{ route('admin.karyawan.index') }}" class="nav-item active">
+        <span class="nav-icon">👥</span> Karyawan
+    </a>
+    <a href="{{ route('admin.pelanggan') }}" class="nav-item">
+        <span class="nav-icon">🧑‍🤝‍🧑</span> Pelanggan
+    </a>
+    <a href="{{ route('admin.stok') }}" class="nav-item">
+        <span class="nav-icon">📦</span> Stok
+    </a>
+    <a href="{{ route('admin.history') }}" class="nav-item">
+        <span class="nav-icon">📋</span> History Transaksi
+    </a>
+@endsection
 
 @section('content')
-<div class="container-fluid">
-    <div class="d-flex align-items-center mb-4 gap-2">
-        <a href="{{ route('admin.karyawan.index') }}" class="btn btn-sm btn-outline-secondary">
-            <i class="bi bi-arrow-left"></i>
-        </a>
-        <h4 class="fw-bold mb-0">Edit Karyawan</h4>
-    </div>
 
-    <div class="card shadow-sm" style="max-width:640px">
+{{-- Status badge --}}
+<div style="margin-bottom:20px;display:flex;align-items:center;gap:12px;">
+    <a href="{{ route('admin.karyawan.index') }}" style="font-size:13px;color:var(--text-muted);text-decoration:none;">← Kembali ke Daftar</a>
+    <span style="color:var(--cream-dark);">|</span>
+    @if ($karyawan->sudahAktif())
+        <span class="badge badge-green">✓ Akun Aktif</span>
+    @elseif ($karyawan->tokenMasihValid())
+        <span class="badge badge-gold">📧 Undangan Dikirim</span>
+    @else
+        <span class="badge badge-red">✗ Link Expired</span>
+    @endif
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 300px;gap:20px;align-items:start;">
+
+    {{-- Main form --}}
+    <div class="card">
+        <div class="card-header">
+            <h2>Edit Data Karyawan</h2>
+        </div>
         <div class="card-body">
-            <form method="POST" action="{{ route('admin.karyawan.update', $karyawan->id) }}" enctype="multipart/form-data">
-                @csrf @method('PUT')
+            <form method="POST" action="{{ route('admin.karyawan.update', $karyawan->id) }}">
+                @csrf
+                @method('PUT')
 
-                {{-- Nama --}}
-                <div class="mb-3">
-                    <label class="form-label fw-semibold">Nama Lengkap <span class="text-danger">*</span></label>
-                    <input type="text" name="nama" class="form-control @error('nama') is-invalid @enderror"
-                           value="{{ old('nama', $karyawan->nama) }}" required maxlength="100">
-                    @error('nama') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                <div class="form-grid">
+
+                    <div class="form-group full">
+                        <label for="nama">Nama Lengkap <span style="color:#c0392b;">*</span></label>
+                        <input
+                            type="text"
+                            id="nama"
+                            name="nama"
+                            value="{{ old('nama', $karyawan->nama) }}"
+                            required
+                        >
+                        @error('nama')
+                            <span class="field-error">{{ $message }}</span>
+                        @enderror
+                    </div>
+
+                    <div class="form-group full">
+                        <label for="email">Email</label>
+                        <input
+                            type="email"
+                            id="email"
+                            value="{{ $karyawan->email }}"
+                            disabled
+                            style="background:var(--cream-dark);color:var(--text-muted);cursor:not-allowed;"
+                        >
+                        <span style="font-size:12px;color:var(--text-muted);">
+                            Email tidak bisa diubah setelah karyawan dibuat.
+                        </span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="no_hp">No. HP</label>
+                        <input
+                            type="tel"
+                            id="no_hp"
+                            name="no_hp"
+                            value="{{ old('no_hp', $karyawan->no_hp) }}"
+                            placeholder="08xx-xxxx-xxxx"
+                        >
+                        @error('no_hp')
+                            <span class="field-error">{{ $message }}</span>
+                        @enderror
+                    </div>
+
+                    <div class="form-group">
+                        <label for="peran">Peran <span style="color:#c0392b;">*</span></label>
+                        <select id="peran" name="peran" required>
+                            <option value="admin"    {{ old('peran', $karyawan->peran) === 'admin'    ? 'selected' : '' }}>Admin</option>
+                            <option value="operator" {{ old('peran', $karyawan->peran) === 'operator' ? 'selected' : '' }}>Operator</option>
+                            <option value="kasir"    {{ old('peran', $karyawan->peran) === 'kasir'    ? 'selected' : '' }}>Kasir</option>
+                        </select>
+                        @error('peran')
+                            <span class="field-error">{{ $message }}</span>
+                        @enderror
+                    </div>
+
+                    <div class="form-group full">
+                        <label for="alamat">Alamat</label>
+                        <textarea id="alamat" name="alamat" rows="3" style="resize:vertical;">{{ old('alamat', $karyawan->alamat) }}</textarea>
+                        @error('alamat')
+                            <span class="field-error">{{ $message }}</span>
+                        @enderror
+                    </div>
+
                 </div>
 
-                {{-- Username --}}
-                <div class="mb-3">
-                    <label class="form-label fw-semibold">Username <span class="text-danger">*</span></label>
-                    <input type="text" name="username" class="form-control @error('username') is-invalid @enderror"
-                           value="{{ old('username', $karyawan->username) }}" required maxlength="50">
-                    @error('username') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                </div>
-
-                {{-- Email --}}
-                <div class="mb-3">
-                    <label class="form-label fw-semibold">Email</label>
-                    <input type="email" name="email" class="form-control @error('email') is-invalid @enderror"
-                           value="{{ old('email', $karyawan->email) }}" maxlength="150">
-                    @error('email') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                </div>
-
-                {{-- No HP --}}
-                <div class="mb-3">
-                    <label class="form-label fw-semibold">No. HP</label>
-                    <input type="text" name="no_hp" class="form-control @error('no_hp') is-invalid @enderror"
-                           value="{{ old('no_hp', $karyawan->no_hp) }}" maxlength="20">
-                    @error('no_hp') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                </div>
-
-                {{-- Peran --}}
-                <div class="mb-3">
-                    <label class="form-label fw-semibold">Peran <span class="text-danger">*</span></label>
-                    <select name="peran" class="form-select @error('peran') is-invalid @enderror" required id="selectPeran">
-                        <option value="admin"    {{ old('peran', $karyawan->peran) == 'admin'    ? 'selected' : '' }}>Admin (Super User)</option>
-                        <option value="operator" {{ old('peran', $karyawan->peran) == 'operator' ? 'selected' : '' }}>Operator (Back Office)</option>
-                        <option value="kasir"    {{ old('peran', $karyawan->peran) == 'kasir'    ? 'selected' : '' }}>Kasir (Front Liner)</option>
-                    </select>
-                    @error('peran') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                </div>
-
-                {{-- Shift --}}
-                <div class="mb-3" id="fieldShift"
-                     style="{{ in_array($karyawan->peran, ['operator','kasir']) ? '' : 'display:none' }}">
-                    <label class="form-label fw-semibold">Shift</label>
-                    <select name="shift" class="form-select">
-                        <option value="">-- Pilih Shift --</option>
-                        <option value="pagi"  {{ old('shift', $karyawan->shift) == 'pagi'  ? 'selected' : '' }}>Pagi</option>
-                        <option value="siang" {{ old('shift', $karyawan->shift) == 'siang' ? 'selected' : '' }}>Siang</option>
-                        <option value="malam" {{ old('shift', $karyawan->shift) == 'malam' ? 'selected' : '' }}>Malam</option>
-                    </select>
-                </div>
-
-                {{-- Password (opsional saat edit) --}}
-                <div class="mb-3">
-                    <label class="form-label fw-semibold">Password Baru</label>
-                    <input type="password" name="password" class="form-control @error('password') is-invalid @enderror"
-                           minlength="8" placeholder="Kosongkan jika tidak ingin ubah">
-                    @error('password') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label fw-semibold">Konfirmasi Password Baru</label>
-                    <input type="password" name="password_confirmation" class="form-control" minlength="8">
-                </div>
-
-                {{-- Foto --}}
-                <div class="mb-3">
-                    <label class="form-label fw-semibold">Foto Profil</label>
-                    @if($karyawan->foto)
-                        <div class="mb-2">
-                            <img src="{{ asset('storage/'.$karyawan->foto) }}" width="60" height="60"
-                                 class="rounded-circle border" style="object-fit:cover">
-                            <small class="text-muted ms-2">Foto saat ini</small>
-                        </div>
-                    @endif
-                    <input type="file" name="foto" class="form-control @error('foto') is-invalid @enderror"
-                           accept="image/png,image/jpeg,image/jpg">
-                    <div class="form-text">Format: JPG/PNG, maks 1 MB. Kosongkan jika tidak ingin ubah.</div>
-                    @error('foto') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                </div>
-
-                {{-- Status --}}
-                <div class="mb-4 form-check">
-                    <input class="form-check-input" type="checkbox" name="is_aktif" id="isAktif"
-                           value="1" {{ old('is_aktif', $karyawan->is_aktif) ? 'checked' : '' }}>
-                    <label class="form-check-label fw-semibold" for="isAktif">Akun Aktif</label>
-                </div>
-
-                <div class="d-flex gap-2">
-                    <button type="submit" class="btn btn-primary">
-                        <i class="bi bi-save me-1"></i> Simpan Perubahan
-                    </button>
-                    <a href="{{ route('admin.karyawan.index') }}" class="btn btn-outline-secondary">Batal</a>
+                <div style="display:flex;gap:12px;margin-top:28px;padding-top:20px;border-top:1px solid var(--cream-dark);">
+                    <button type="submit" class="btn btn-primary">Simpan Perubahan</button>
+                    <a href="{{ route('admin.karyawan.index') }}" class="btn btn-outline">Batal</a>
                 </div>
             </form>
         </div>
     </div>
+
+    {{-- Sidebar info --}}
+    <div style="display:flex;flex-direction:column;gap:16px;">
+
+        {{-- Info card --}}
+        <div class="card">
+            <div class="card-header"><h2>Info Akun</h2></div>
+            <div class="card-body">
+                <div style="font-size:13px;color:var(--text-muted);line-height:2;">
+                    <div><strong style="color:var(--text);">Dibuat</strong><br>{{ $karyawan->created_at->format('d M Y, H:i') }}</div>
+                    <div style="margin-top:12px;"><strong style="color:var(--text);">Aktivasi</strong><br>
+                        {{ $karyawan->activated_at ? $karyawan->activated_at->format('d M Y, H:i') : '—' }}
+                    </div>
+                    <div style="margin-top:12px;"><strong style="color:var(--text);">Status</strong><br>
+                        @if ($karyawan->sudahAktif())
+                            <span style="color:#2e7d52;">✓ Aktif</span>
+                        @elseif ($karyawan->tokenMasihValid())
+                            <span style="color:#8a6520;">📧 Menunggu Aktivasi</span>
+                        @else
+                            <span style="color:#c0392b;">✗ Link Expired</span>
+                        @endif
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- Resend undangan --}}
+        @if (!$karyawan->sudahAktif())
+            <div class="card">
+                <div class="card-body">
+                    <div style="font-size:13px;color:var(--text-muted);margin-bottom:14px;line-height:1.7;">
+                        Karyawan belum mengaktifkan akunnya. Kirim ulang email undangan jika link sebelumnya sudah expired.
+                    </div>
+                    <form method="POST" action="{{ route('admin.karyawan.resend', $karyawan->id) }}">
+                        @csrf
+                        <button type="submit" class="btn btn-outline" style="width:100%;"
+                            onclick="return confirm('Kirim ulang undangan ke {{ $karyawan->email }}?')">
+                            📧 Kirim Ulang Undangan
+                        </button>
+                    </form>
+                </div>
+            </div>
+        @endif
+
+        {{-- Danger zone --}}
+        <div class="card" style="border-color:#fdecea;">
+            <div class="card-header" style="border-color:#fdecea;">
+                <h2 style="color:#c0392b;font-size:14px;">Zona Berbahaya</h2>
+            </div>
+            <div class="card-body">
+                <div style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">
+                    Hapus karyawan ini secara permanen. Tindakan tidak bisa dibatalkan.
+                </div>
+                <form method="POST" action="{{ route('admin.karyawan.destroy', $karyawan->id) }}">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="btn btn-danger" style="width:100%;"
+                        onclick="return confirm('Yakin hapus karyawan {{ $karyawan->nama }}? Tindakan ini PERMANEN.')">
+                        Hapus Karyawan
+                    </button>
+                </form>
+            </div>
+        </div>
+
+    </div>
 </div>
 
-@push('scripts')
-<script>
-const selectPeran = document.getElementById('selectPeran');
-const fieldShift  = document.getElementById('fieldShift');
-selectPeran.addEventListener('change', function () {
-    fieldShift.style.display = ['operator','kasir'].includes(this.value) ? 'block' : 'none';
-});
-</script>
-@endpush
 @endsection
