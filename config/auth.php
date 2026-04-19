@@ -68,8 +68,8 @@ return [
         'karyawan' => [
             'provider' => 'karyawan',
             'table' => 'password_reset_tokens',
-            'expire' => 60,
-            'throttle' => 60,
+            'expire' => 60,  // token expired dalam 60 menit
+            'throttle' => 60, // minimal 60 detik antar request
         ],
     ],
 

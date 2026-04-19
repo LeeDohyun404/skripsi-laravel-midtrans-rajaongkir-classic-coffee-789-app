@@ -26,7 +26,6 @@
                 margin: 8mm;
             }
         }
-
         * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     </style>
 </head>
@@ -66,6 +65,13 @@
                 <div class="text-5xl font-black text-amber-600">{{ $nomorAntrian }}</div>
                 <p class="text-[10px] text-stone-400 mt-0.5">#{{ substr($order->number, -8) }}</p>
             </div>
+
+            {{-- Badge Voucher --}}
+            @if($order->used_voucher)
+            <div class="bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 text-center mb-3">
+                <p class="text-[10px] font-black text-amber-700 uppercase tracking-widest">🎉 Menggunakan Voucher Minuman Gratis</p>
+            </div>
+            @endif
 
             <div class="border-t border-dashed border-stone-200 my-3"></div>
 
@@ -134,17 +140,29 @@
                 </div>
                 @endif
                 @endif
+                @if($order->used_voucher && $order->voucher_discount > 0)
+                <div class="flex justify-between text-amber-600">
+                    <span class="font-semibold">Diskon Voucher</span>
+                    <span class="font-bold">- Rp {{ number_format($order->voucher_discount, 0, ',', '.') }}</span>
+                </div>
+                @endif
                 <div class="flex justify-between pt-2 border-t border-stone-200">
                     <span class="font-black text-stone-800 text-sm">TOTAL</span>
                     <span class="font-black text-amber-600 text-sm">Rp {{ number_format($order->total_price, 0, ',', '.') }}</span>
                 </div>
                 <div class="flex justify-between">
                     <span class="text-stone-500">Pembayaran</span>
-                    <span class="font-bold text-green-600 text-xs">
-                        <i class="fas fa-check-circle mr-1"></i>
+                    <span class="font-bold text-xs {{ in_array($order->status, ['success','settlement','capture','completed']) ? 'text-green-600' : 'text-orange-500' }}">
+                        <i class="fas {{ in_array($order->status, ['success','settlement','capture','completed']) ? 'fa-check-circle' : 'fa-clock' }} mr-1"></i>
                         {{ in_array($order->status, ['success','settlement','capture','completed']) ? 'LUNAS' : strtoupper($order->status) }}
                     </span>
                 </div>
+                @if($order->used_voucher)
+                <div class="flex justify-between">
+                    <span class="text-stone-500">Metode Bayar</span>
+                    <span class="font-bold text-stone-700 text-xs">💵 Tunai (Cash)</span>
+                </div>
+                @endif
             </div>
 
             <div class="border-t border-dashed border-stone-200 my-3"></div>

@@ -14,6 +14,10 @@ use App\Http\Controllers\KasirController;
 use App\Http\Controllers\AktivasiKaryawanController;
 use App\Http\Controllers\KaryawanAuthController;
 use App\Http\Controllers\Admin\KaryawanController;
+use App\Http\Controllers\Admin\ProfilController;
+use App\Http\Controllers\StaffPasswordController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\VoucherController;
 
 // =============================================
 // ✅ API RAJAONGKIR — WAJIB PALING ATAS
@@ -81,11 +85,14 @@ Route::get('/home', function () {
 // =============================================
 Route::get('/checkout_page', [RajaOngkirController::class, 'checkout'])->middleware(['auth', 'verified']);
 Route::post('/payment/process', [OrderController::class, 'checkout'])->name('payment.process')->middleware(['auth', 'verified']);
+Route::post('/payment/cash',    [OrderController::class, 'checkout'])->name('payment.cash')->middleware(['auth', 'verified']);
 
 // =============================================
-// CART
+// CART + PROFILE PELANGGAN (auth web)
 // =============================================
 Route::middleware(['auth'])->group(function () {
+
+    // Keranjang
     Route::get('/keranjang', function () {
         return view('keranjang');
     });
@@ -100,7 +107,8 @@ Route::middleware(['auth'])->group(function () {
                 "name"     => $request->name,
                 "quantity" => 1,
                 "price"    => $request->price,
-                "image"    => $request->image
+                "image"    => $request->image,
+                "category" => $request->category ?? DB::table('products')->where('id', $id)->value('category'),
             ];
         }
         session()->put('cart', $cart);
@@ -121,7 +129,57 @@ Route::middleware(['auth'])->group(function () {
         session()->put('cart', $cart);
         return redirect()->back();
     });
+
+    // Profile pelanggan
+    Route::get('/profile',            [ProfileController::class, 'index'])->name('profile');
+    Route::patch('/profile/name',     [ProfileController::class, 'updateName'])->name('profile.name');
+    Route::patch('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password');
+    Route::post('/profile/avatar',    [ProfileController::class, 'updateAvatar'])->name('profile.avatar');
+
+    // Voucher
+    Route::post('/voucher/activate',   [VoucherController::class, 'activate'])->name('voucher.activate');
+    Route::post('/voucher/deactivate', [VoucherController::class, 'deactivate'])->name('voucher.deactivate');
+
+    // Struk & refresh token Midtrans
+    Route::get('/orders/{id}/struk',          [OrderController::class, 'struk'])->name('orders.struk');
+    Route::post('/orders/{id}/refresh-token', [OrderController::class, 'refreshToken'])->name('orders.refresh-token');
+
 });
+
+// =============================================
+// GOOGLE AUTH
+// =============================================
+Route::get('auth/google', [GoogleAuthController::class, 'redirect']);
+Route::get('auth/google/callback', [GoogleAuthController::class, 'callback']);
+
+// =============================================
+// AKTIVASI KARYAWAN (publik)
+// =============================================
+Route::prefix('aktivasi')->name('aktivasi.')->group(function () {
+    Route::get('/invalid', [AktivasiKaryawanController::class, 'invalid'])->name('invalid');
+    Route::get('/{token}', [AktivasiKaryawanController::class, 'tampilForm'])->name('form');
+    Route::post('/{token}', [AktivasiKaryawanController::class, 'proses'])->name('proses');
+});
+
+// =============================================
+// AUTH KARYAWAN — Login / Logout
+// =============================================
+Route::prefix('staff')->name('staff.')->group(function () {
+    Route::get('/login', [KaryawanAuthController::class, 'showLogin'])
+        ->name('login')
+        ->middleware('guest:karyawan');
+    Route::post('/login', [KaryawanAuthController::class, 'login'])
+        ->name('login.post')
+        ->middleware('guest:karyawan');
+    Route::post('/logout', [KaryawanAuthController::class, 'logout'])
+        ->name('logout')
+        ->middleware('auth.karyawan');
+});
+
+Route::get('/staff/forgot-password', [StaffPasswordController::class, 'showForgotForm'])->name('staff.password.request');
+Route::post('/staff/forgot-password', [StaffPasswordController::class, 'sendResetLink'])->name('staff.password.email');
+Route::get('/staff/reset-password/{token}', [StaffPasswordController::class, 'showResetForm'])->name('staff.password.reset');
+Route::post('/staff/reset-password', [StaffPasswordController::class, 'resetPassword'])->name('staff.password.update');
 
 // =============================================
 // ADMIN LAMA (AdminController — guard web/admin_auth)
@@ -185,49 +243,12 @@ Route::middleware(['admin_auth'])->group(function () {
 });
 
 // =============================================
-// GOOGLE AUTH
-// =============================================
-Route::get('auth/google', [GoogleAuthController::class, 'redirect']);
-Route::get('auth/google/callback', [GoogleAuthController::class, 'callback']);
-
-// =============================================
-// STRUK (pelanggan — guard web)
-// =============================================
-Route::get('/struk/{id}', [App\Http\Controllers\OrderController::class, 'struk'])->name('struk')->middleware('auth');
-
-// =============================================
-// AKTIVASI KARYAWAN (publik — tidak perlu login)
-// =============================================
-Route::prefix('aktivasi')->name('aktivasi.')->group(function () {
-    Route::get('/invalid', [AktivasiKaryawanController::class, 'invalid'])->name('invalid');
-    Route::get('/{token}', [AktivasiKaryawanController::class, 'tampilForm'])->name('form');
-    Route::post('/{token}', [AktivasiKaryawanController::class, 'proses'])->name('proses');
-});
-
-// =============================================
-// AUTH KARYAWAN — Login / Logout
-// =============================================
-Route::prefix('staff')->name('staff.')->group(function () {
-    Route::get('/login', [KaryawanAuthController::class, 'showLogin'])
-        ->name('login')
-        ->middleware('guest:karyawan');
-
-    Route::post('/login', [KaryawanAuthController::class, 'login'])
-        ->name('login.post')
-        ->middleware('guest:karyawan');
-
-    Route::post('/logout', [KaryawanAuthController::class, 'logout'])
-        ->name('logout')
-        ->middleware('auth.karyawan');
-});
-
-// =============================================
 // ADMIN KARYAWAN — guard karyawan, role admin
 // =============================================
 Route::prefix('admin')->name('admin.')->middleware(['auth.karyawan', 'role.karyawan:admin'])->group(function () {
-    Route::get('/dashboard', function () {
-        return view('admin.dashboard');
-    })->name('dashboard');
+    Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
+    Route::post('/profil/nama', [ProfilController::class, 'gantiNama'])->name('profil.nama');
+    Route::post('/profil/password', [ProfilController::class, 'ubahPassword'])->name('profil.password');
 
     Route::prefix('karyawan')->name('karyawan.')->group(function () {
         Route::get('/', [KaryawanController::class, 'index'])->name('index');
@@ -241,8 +262,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth.karyawan', 'role.karya
 
     Route::get('/pelanggan', [\App\Http\Controllers\Admin\PelangganController::class, 'index'])->name('pelanggan');
     Route::delete('/pelanggan/{id}/hapus', [\App\Http\Controllers\Admin\PelangganController::class, 'destroy'])->name('pelanggan.hapus');
-    Route::get('/history', [\App\Http\Controllers\AdminController::class, 'history'])->name('history');
-    Route::get('/stok', [\App\Http\Controllers\AdminController::class, 'stok'])->name('stok');
+    Route::get('/history', [AdminController::class, 'history'])->name('history');
+    Route::get('/stok', [AdminController::class, 'stok'])->name('stok');
 });
 
 // =============================================
@@ -255,16 +276,20 @@ Route::prefix('operator')->name('operator.')->middleware(['auth.karyawan', 'role
     Route::put('/produk/update', [App\Http\Controllers\OperatorController::class, 'updateProduk'])->name('produk.update');
     Route::post('/stok/update', [App\Http\Controllers\OperatorController::class, 'updateStok'])->name('stok.update');
     Route::delete('/produk/{id}', [App\Http\Controllers\OperatorController::class, 'destroyProduk'])->name('produk.hapus');
+    Route::post('/profil/nama', [ProfilController::class, 'gantiNama'])->name('profil.nama');
+    Route::post('/profil/password', [ProfilController::class, 'ubahPassword'])->name('profil.password');
 });
 
 // =============================================
 // KASIR — guard karyawan, role kasir
 // =============================================
 Route::prefix('kasir')->name('kasir.')->middleware(['auth.karyawan', 'role.karyawan:kasir'])->group(function () {
-    Route::get('/dashboard', function () {
-        return view('kasir.dashboard');
-    })->name('dashboard');
+    Route::get('/dashboard', [App\Http\Controllers\KasirController::class, 'dashboard'])->name('dashboard');
     Route::get('/transaksi', [App\Http\Controllers\KasirController::class, 'transaksi'])->name('transaksi');
     Route::put('/pesanan/{id}', [App\Http\Controllers\KasirController::class, 'updatePesanan'])->name('pesanan.update');
     Route::get('/detail-pelanggan', [KasirController::class, 'detailPelanggan'])->name('detail.pelanggan');
+    Route::get('/detail-pesanan/{id}', [KasirController::class, 'detailPesanan'])->name('detail.pesanan');
+    Route::post('/transaksi/store', [App\Http\Controllers\KasirController::class, 'storeTransaksi'])->name('transaksi.store');
+    Route::post('/profil/nama', [ProfilController::class, 'gantiNama'])->name('profil.nama');
+    Route::post('/profil/password', [ProfilController::class, 'ubahPassword'])->name('profil.password');
 });

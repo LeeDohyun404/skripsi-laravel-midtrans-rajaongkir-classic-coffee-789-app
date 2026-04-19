@@ -7,6 +7,7 @@
     <title>Keranjang Belanja - Classic 789</title>
 </head>
 <body class="bg-stone-50">
+    @include('header')
     <div class="container mx-auto px-6 py-12 max-w-4xl">
         <h2 class="text-3xl font-serif italic mb-8 border-b pb-4">Keranjang Anda</h2>
 
@@ -47,21 +48,88 @@
                     </tbody>
                 </table>
 
-                <div class="p-8 bg-stone-50 border-t flex flex-col items-end">
-                    <p class="text-sm text-stone-500 uppercase tracking-widest">Total Pembayaran</p>
-                    <h3 class="text-3xl font-black text-stone-900 mb-6">Rp {{ number_format($total) }}</h3>
+                <div class="p-8 bg-stone-50 border-t flex flex-col items-end gap-4">
+
+                    {{-- ── Info Voucher ── --}}
+                    @auth
+                        @php
+                            // Validasi session voucher: cek apakah masih aktif di DB
+                            if (session('voucher_active') && session('voucher_id')) {
+                                $checkVoucher = \App\Models\Voucher::where('id', session('voucher_id'))
+                                    ->where('status', 'active')
+                                    ->where('expires_at', '>', now())
+                                    ->first();
+                                if (!$checkVoucher) {
+                                    // Voucher sudah terpakai/expired, bersihkan session
+                                    session()->forget(['voucher_active', 'voucher_id', 'voucher_code']);
+                                }
+                            }
+                        @endphp
+
+                        @if(session('voucher_active'))
+                            {{-- Voucher sudah diaktifkan --}}
+                            <div class="w-full bg-amber-50 border border-amber-300 rounded-2xl p-4 flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <span class="text-2xl">🎉</span>
+                                    <div>
+                                        <p class="font-bold text-amber-800 text-sm">Voucher 1 Minuman Gratis Aktif!</p>
+                                        <p class="text-xs text-amber-600">Minuman termurah di keranjang akan digratiskan</p>
+                                    </div>
+                                </div>
+                                <form action="{{ route('voucher.deactivate') }}" method="POST">
+                                    @csrf
+                                    <button type="submit" class="text-xs text-red-500 font-bold hover:text-red-700 border border-red-300 px-3 py-1.5 rounded-lg transition">
+                                        ✕ Batal
+                                    </button>
+                                </form>
+                            </div>
+                            <p class="text-xs text-amber-700 w-full">
+                                <i class="fas fa-info-circle mr-1"></i>
+                                Pembayaran hanya <strong>tunai (cash)</strong> saat menggunakan voucher.
+                            </p>
+                        @else
+                            {{-- Cek apakah punya voucher tapi belum diaktifkan --}}
+                            @php
+                                $activeVoucherCart = \App\Models\Voucher::activeFor(Auth::id())->first();
+                            @endphp
+                            @if($activeVoucherCart)
+                                <div class="w-full bg-stone-100 border border-stone-200 rounded-2xl p-4 flex items-center justify-between">
+                                    <div class="flex items-center gap-3">
+                                        <span class="text-2xl">🎟️</span>
+                                        <div>
+                                            <p class="font-bold text-stone-700 text-sm">Kamu punya voucher minuman gratis!</p>
+                                            <p class="text-xs text-stone-500">Aktifkan di halaman profil untuk menggunakannya</p>
+                                        </div>
+                                    </div>
+                                    <a href="{{ route('profile') }}" class="text-xs text-amber-700 font-bold hover:text-amber-900 border border-amber-300 px-3 py-1.5 rounded-lg transition bg-amber-50">
+                                        Lihat Voucher
+                                    </a>
+                                </div>
+                            @endif
+                        @endif
+                    @endauth
+
+                    {{-- ── Total ── --}}
+                    <div class="text-right">
+                        <p class="text-sm text-stone-500 uppercase tracking-widest">Total Pembayaran</p>
+                        <h3 class="text-3xl font-black text-stone-900 mb-2">Rp {{ number_format($total) }}</h3>
+                        @if(session('voucher_active'))
+                            <p class="text-xs text-amber-600 font-semibold">* Diskon voucher dihitung saat checkout</p>
+                        @endif
+                    </div>
 
                     <div class="flex gap-4 w-full md:w-auto">
                         <a href="/produk" class="flex-1 md:flex-none text-center border-2 border-stone-900 px-8 py-4 rounded-2xl font-bold hover:bg-stone-900 hover:text-white transition">
                             KEMBALI BELANJA
                         </a>
-                        {{-- ✅ FIX: ganti checkout-page → checkout_page --}}
                         <a href="/checkout_page" class="bg-black text-white px-8 py-4 rounded-2xl font-bold hover:bg-amber-600 transition">
                             LANJUT KE PENGIRIMAN
                         </a>
                     </div>
+
                 </div>
             </div>
+
         @else
             <div class="text-center py-20 bg-white rounded-3xl border border-dashed border-stone-300">
                 <i class="fas fa-shopping-basket text-6xl text-stone-200 mb-4"></i>
@@ -69,6 +137,7 @@
                 <a href="/produk" class="bg-stone-900 text-white px-8 py-4 rounded-2xl font-bold uppercase text-xs tracking-widest">Ayo Belanja!</a>
             </div>
         @endif
+
     </div>
 </body>
 </html>

@@ -229,12 +229,26 @@
             height: 16px;
             accent-color: var(--brown-mid);
             cursor: pointer;
+            flex-shrink: 0;
         }
 
         .remember-row label {
             font-size: 13px;
             color: var(--text-muted);
             cursor: pointer;
+        }
+
+        .forgot-link {
+            margin-left: auto;
+            font-size: 12px;
+            color: var(--text-muted);
+            text-decoration: none;
+            transition: color 0.2s;
+            white-space: nowrap;
+        }
+
+        .forgot-link:hover {
+            color: var(--brown-warm);
         }
 
         /* Submit */
@@ -343,7 +357,8 @@
 
             <div class="remember-row">
                 <input type="checkbox" id="remember" name="remember">
-                <label for="remember">Ingat saya di perangkat ini</label>
+                <label for="remember">Ingat saya</label>
+                <a href="{{ route('staff.password.request') }}" class="forgot-link">Lupa password?</a>
             </div>
 
             <button type="submit" class="btn-login">Masuk →</button>

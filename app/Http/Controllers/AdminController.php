@@ -4,9 +4,32 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Models\Karyawan;
 
-class AdminController extends Controller 
+class AdminController extends Controller
 {
+    // ✅ PERBAIKAN: Method dashboard dengan data lengkap untuk blade
+    public function dashboard()
+    {
+        $totalKaryawan      = Karyawan::count();
+        $karyawanAktif      = Karyawan::where('is_aktif', true)->whereNotNull('password')->count();
+        $karyawanBelumAktif = Karyawan::where(function ($q) {
+                                    $q->where('is_aktif', false)->orWhereNull('password');
+                                })->count();
+        $totalPelanggan     = DB::table('users')->count();
+        $transaksiHariIni   = DB::table('orders')->whereDate('created_at', today())->count();
+        $karyawanTerbaru    = Karyawan::latest()->limit(5)->get();
+
+        return view('admin.dashboard', compact(
+            'totalKaryawan',
+            'karyawanAktif',
+            'karyawanBelumAktif',
+            'totalPelanggan',
+            'transaksiHariIni',
+            'karyawanTerbaru'
+        ));
+    }
+
     public function index()
     {
         $products = DB::table('products')->get();

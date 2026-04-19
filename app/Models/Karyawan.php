@@ -106,4 +106,20 @@ class Karyawan extends Authenticatable
             default    => 'badge-secondary',
         };
     }
+
+    // ── Password Reset ────────────────────────────────────────────────
+
+    /**
+     * Override supaya link reset password di email mengarah ke
+     * /staff/reset-password/... bukan /password/reset/... (default Laravel).
+     */
+    public function sendPasswordResetNotification($token): void
+    {
+        $resetUrl = route('staff.password.reset', [
+            'token' => $token,
+            'email' => $this->email,
+        ]);
+
+        $this->notify(new \App\Notifications\StaffResetPasswordNotification($resetUrl));
+    }
 }

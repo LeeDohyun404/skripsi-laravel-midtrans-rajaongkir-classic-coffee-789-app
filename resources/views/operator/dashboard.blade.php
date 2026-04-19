@@ -16,6 +16,14 @@
 
 @section('content')
 
+@if($errors->any())
+    <div style="background:#fdecea;border:1px solid #f5c0bc;border-radius:8px;padding:12px 16px;margin-bottom:20px;color:#c0392b;font-size:13px;">
+        @foreach($errors->all() as $e)
+            <p>⚠️ {{ $e }}</p>
+        @endforeach
+    </div>
+@endif
+
 <div class="stats-grid">
     <div class="stat-card">
         <div class="stat-icon">📦</div>
@@ -72,3 +80,8 @@
 </div>
 
 @endsection
+
+{{-- ✅ FIX: Pindah ke @push('scripts') supaya dimuat SETELAH layout selesai render --}}
+@push('scripts')
+    @include('admin.modal_profil')
+@endpush

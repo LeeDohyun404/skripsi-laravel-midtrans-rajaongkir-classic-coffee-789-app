@@ -499,8 +499,49 @@
     <div class="topbar">
         <h1>@yield('page-title', 'Dashboard')</h1>
         <div class="topbar-right">
-            <span class="greeting">Halo, <span>{{ auth('karyawan')->user()->nama ?? '' }}</span> 👋</span>
+            {{-- Dropdown Profil --}}
+            <div style="position:relative;display:inline-block;" id="profil-wrapper">
+                <button onclick="toggleDropdownProfil()" style="display:flex;align-items:center;gap:8px;padding:6px 14px;border:1px solid var(--cream-dark);border-radius:8px;background:transparent;cursor:pointer;font-size:13px;color:var(--text);font-family:'DM Sans',sans-serif;">
+                    <span style="width:30px;height:30px;border-radius:50%;background:var(--gold-light);display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:var(--brown-mid);">
+                        {{ strtoupper(substr(auth('karyawan')->user()->nama ?? 'U', 0, 2)) }}
+                    </span>
+                    <span>{{ auth('karyawan')->user()->nama ?? '' }}</span>
+                    <span style="font-size:10px;opacity:0.5;">▼</span>
+                </button>
+                <div id="dropdown-profil" style="display:none;position:absolute;right:0;top:calc(100% + 8px);background:#fff;border:1px solid var(--cream-dark);border-radius:10px;width:200px;box-shadow:0 4px 20px rgba(0,0,0,.10);z-index:999;overflow:hidden;">
+                    <div style="padding:10px 14px 8px;border-bottom:1px solid var(--cream-dark);">
+                        <div style="font-size:12px;font-weight:600;color:var(--text);">{{ auth('karyawan')->user()->nama ?? '' }}</div>
+                        <div style="font-size:11px;color:var(--text-muted);">{{ ucfirst(auth('karyawan')->user()->peran ?? '') }}</div>
+                    </div>
+                    <button onclick="bukaModalProfil('nama'); toggleDropdownProfil();" style="width:100%;padding:10px 14px;text-align:left;font-size:13px;background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:8px;color:var(--text);">
+                        ✏️ Ganti nama
+                    </button>
+                    <button onclick="bukaModalProfil('password'); toggleDropdownProfil();" style="width:100%;padding:10px 14px;text-align:left;font-size:13px;background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:8px;color:var(--text);">
+                        🔑 Ubah password
+                    </button>
+                    <div style="border-top:1px solid var(--cream-dark);">
+                        <form method="POST" action="{{ route('staff.logout') }}">
+                            @csrf
+                            <button type="submit" style="width:100%;padding:10px 14px;text-align:left;font-size:13px;color:#dc2626;background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:8px;">
+                                🚪 Keluar
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
         </div>
+        <script>
+        function toggleDropdownProfil() {
+            const dd = document.getElementById('dropdown-profil');
+            dd.style.display = dd.style.display === 'none' ? 'block' : 'none';
+        }
+        document.addEventListener('click', function(e) {
+            const wrapper = document.getElementById('profil-wrapper');
+            if (wrapper && !wrapper.contains(e.target)) {
+                document.getElementById('dropdown-profil').style.display = 'none';
+            }
+        });
+        </script>
     </div>
 
     <div class="page-content">

@@ -50,6 +50,9 @@
                 @csrf
                 @method('PUT')
 
+                {{-- ✅ PERBAIKAN: email disabled tidak ikut submit, pakai hidden field --}}
+                <input type="hidden" name="email" value="{{ $karyawan->email }}">
+
                 <div class="form-grid">
 
                     <div class="form-group full">
@@ -67,10 +70,10 @@
                     </div>
 
                     <div class="form-group full">
-                        <label for="email">Email</label>
+                        <label for="email_display">Email</label>
                         <input
                             type="email"
-                            id="email"
+                            id="email_display"
                             value="{{ $karyawan->email }}"
                             disabled
                             style="background:var(--cream-dark);color:var(--text-muted);cursor:not-allowed;"
@@ -96,11 +99,18 @@
 
                     <div class="form-group">
                         <label for="peran">Peran <span style="color:#c0392b;">*</span></label>
-                        <select id="peran" name="peran" required>
+                        <select id="peran" name="peran" required
+                            {{-- ✅ PERBAIKAN: admin utama (ID terkecil) tidak bisa diganti perannya --}}
+                            {{ $karyawan->id === \App\Models\Karyawan::min('id') ? 'disabled' : '' }}>
                             <option value="admin"    {{ old('peran', $karyawan->peran) === 'admin'    ? 'selected' : '' }}>Admin</option>
                             <option value="operator" {{ old('peran', $karyawan->peran) === 'operator' ? 'selected' : '' }}>Operator</option>
                             <option value="kasir"    {{ old('peran', $karyawan->peran) === 'kasir'    ? 'selected' : '' }}>Kasir</option>
                         </select>
+                        @if ($karyawan->id === \App\Models\Karyawan::min('id'))
+                            {{-- Kirim tetap nilai peran asli walau select di-disabled --}}
+                            <input type="hidden" name="peran" value="{{ $karyawan->peran }}">
+                            <span style="font-size:12px;color:var(--text-muted);">Peran admin utama tidak bisa diubah.</span>
+                        @endif
                         @error('peran')
                             <span class="field-error">{{ $message }}</span>
                         @enderror
@@ -168,24 +178,38 @@
         @endif
 
         {{-- Danger zone --}}
-        <div class="card" style="border-color:#fdecea;">
-            <div class="card-header" style="border-color:#fdecea;">
-                <h2 style="color:#c0392b;font-size:14px;">Zona Berbahaya</h2>
-            </div>
-            <div class="card-body">
-                <div style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">
-                    Hapus karyawan ini secara permanen. Tindakan tidak bisa dibatalkan.
+        {{-- ✅ PERBAIKAN: admin utama (ID terkecil) tidak bisa dihapus --}}
+        @if ($karyawan->id !== \App\Models\Karyawan::min('id'))
+            <div class="card" style="border-color:#fdecea;">
+                <div class="card-header" style="border-color:#fdecea;">
+                    <h2 style="color:#c0392b;font-size:14px;">Zona Berbahaya</h2>
                 </div>
-                <form method="POST" action="{{ route('admin.karyawan.destroy', $karyawan->id) }}">
-                    @csrf
-                    @method('DELETE')
-                    <button type="submit" class="btn btn-danger" style="width:100%;"
-                        onclick="return confirm('Yakin hapus karyawan {{ $karyawan->nama }}? Tindakan ini PERMANEN.')">
-                        Hapus Karyawan
-                    </button>
-                </form>
+                <div class="card-body">
+                    <div style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">
+                        Hapus karyawan ini secara permanen. Tindakan tidak bisa dibatalkan.
+                    </div>
+                    <form method="POST" action="{{ route('admin.karyawan.destroy', $karyawan->id) }}">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="btn btn-danger" style="width:100%;"
+                            onclick="return confirm('Yakin hapus karyawan {{ $karyawan->nama }}? Tindakan ini PERMANEN.')">
+                            Hapus Karyawan
+                        </button>
+                    </form>
+                </div>
             </div>
-        </div>
+        @else
+            <div class="card" style="border-color:#e0e0e0;">
+                <div class="card-header" style="border-color:#e0e0e0;">
+                    <h2 style="color:var(--text-muted);font-size:14px;">Zona Berbahaya</h2>
+                </div>
+                <div class="card-body">
+                    <div style="font-size:13px;color:var(--text-muted);">
+                        🔒 Admin utama tidak bisa dihapus dari sistem.
+                    </div>
+                </div>
+            </div>
+        @endif
 
     </div>
 </div>

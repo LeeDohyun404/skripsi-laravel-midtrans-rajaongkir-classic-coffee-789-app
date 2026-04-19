@@ -26,7 +26,7 @@
         // Trigger Pop-up Midtrans
         window.snap.pay('{{ $snapToken }}', {
             onSuccess: function(result){
-                window.location.href = '/struk/{{ $orderId }}';
+                window.location.href = '/orders/{{ $orderId }}/struk';
             },
             onPending: function(result){
                 alert("Menunggu pembayaran Anda...");

@@ -15,12 +15,17 @@ use Illuminate\Support\Facades\Config;
 
 class KaryawanController extends Controller
 {
+    // ── Helper: ambil ID admin utama (yang pertama dibuat) ────────────
+    private function adminUtamaId(): int
+    {
+        return (int) Karyawan::withTrashed()->min('id');
+    }
+
     // Tampilkan daftar karyawan dengan filter & pagination
     public function index(Request $request)
     {
         $query = Karyawan::query();
 
-        // Filter search nama / email
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
@@ -29,12 +34,10 @@ class KaryawanController extends Controller
             });
         }
 
-        // Filter peran
         if ($request->filled('peran')) {
             $query->where('peran', $request->peran);
         }
 
-        // Filter status aktivasi — gunakan kolom is_aktif yang ada di tabel
         if ($request->filled('status')) {
             if ($request->status === 'aktif') {
                 $query->where('is_aktif', true)->whereNotNull('password');
@@ -61,7 +64,7 @@ class KaryawanController extends Controller
     {
         $request->validate([
             'nama'  => 'required|string|max:100',
-            'email' => 'required|email|unique:karyawan,email,NULL,id,deleted_at,NULL', // abaikan data soft delete
+            'email' => 'required|email|unique:karyawan,email,NULL,id,deleted_at,NULL',
             'peran' => 'required|in:admin,operator,kasir',
         ]);
 
@@ -93,30 +96,46 @@ class KaryawanController extends Controller
         return view('admin.karyawan.edit', compact('karyawan'));
     }
 
-    // Update data karyawan
+    // ✅ PERBAIKAN: Update — email diambil dari DB bukan dari request,
+    //               dan peran admin utama dikunci di sisi server
     public function update(Request $request, $id)
     {
         $karyawan = Karyawan::findOrFail($id);
 
         $request->validate([
             'nama'  => 'required|string|max:100',
-            'email' => 'required|email|unique:karyawan,email,' . $id . ',id,deleted_at,NULL', // abaikan data soft delete
             'peran' => 'required|in:admin,operator,kasir',
+            'no_hp' => 'nullable|string|max:20',
+            'alamat'=> 'nullable|string|max:255',
         ]);
 
+        $peranBaru = $request->peran;
+
+        // Proteksi server: peran admin utama tidak boleh diubah
+        if ($id == $this->adminUtamaId()) {
+            $peranBaru = $karyawan->peran;
+        }
+
         $karyawan->update([
-            'nama'  => $request->nama,
-            'email' => $request->email,
-            'peran' => $request->peran,
+            'nama'   => $request->nama,
+            // email sengaja TIDAK diupdate — tidak bisa diubah
+            'peran'  => $peranBaru,
+            'no_hp'  => $request->no_hp,
+            'alamat' => $request->alamat,
         ]);
 
         return redirect()->route('admin.karyawan.index')
                          ->with('success', 'Data karyawan berhasil diperbarui!');
     }
 
-    // Hapus karyawan
+    // ✅ PERBAIKAN: Hapus — admin utama tidak bisa dihapus
     public function destroy($id)
     {
+        if ($id == $this->adminUtamaId()) {
+            return redirect()->route('admin.karyawan.index')
+                             ->with('error', 'Admin utama tidak bisa dihapus dari sistem.');
+        }
+
         $karyawan = Karyawan::withTrashed()->findOrFail($id);
 
         DB::transaction(function () use ($karyawan) {
@@ -165,27 +184,21 @@ class KaryawanController extends Controller
         if ($validator->fails()) {
             Log::warning('Email aktivasi karyawan dibatalkan karena email tidak valid.', [
                 'karyawan_id' => $karyawan->id,
-                'email' => $karyawan->email,
-                'errors' => $validator->errors()->all(),
-                'url_aktivasi' => $urlAktivasi,
+                'email'       => $karyawan->email,
+                'errors'      => $validator->errors()->all(),
+                'url_aktivasi'=> $urlAktivasi,
             ]);
 
-            return [
-                'success' => false,
-                'url' => $urlAktivasi,
-            ];
+            return ['success' => false, 'url' => $urlAktivasi];
         }
 
         try {
-            $mailer = Config::get('mail.default', 'smtp');
+            $mailer      = Config::get('mail.default', 'smtp');
             $emailTujuan = trim($karyawan->email);
 
             Mail::mailer($mailer)->send(
                 'emails.undangan-karyawan',
-                [
-                    'karyawan' => $karyawan,
-                    'urlAktivasi' => $urlAktivasi,
-                ],
+                ['karyawan' => $karyawan, 'urlAktivasi' => $urlAktivasi],
                 function ($message) use ($karyawan, $emailTujuan) {
                     $message->to($emailTujuan, $karyawan->nama)
                             ->subject('Undangan Aktivasi Akun Karyawan');
@@ -195,49 +208,30 @@ class KaryawanController extends Controller
             $failures = method_exists(Mail::getFacadeRoot(), 'failures') ? Mail::failures() : [];
 
             if (!empty($failures)) {
-                Log::warning('Mailer tidak melempar exception, tetapi melaporkan kegagalan pengiriman email aktivasi.', [
-                    'karyawan_id' => $karyawan->id,
-                    'email' => $emailTujuan,
-                    'mailer' => $mailer,
-                    'failures' => $failures,
+                Log::warning('Mailer melaporkan kegagalan pengiriman email aktivasi.', [
+                    'karyawan_id'  => $karyawan->id,
+                    'failures'     => $failures,
                     'url_aktivasi' => $urlAktivasi,
                 ]);
-
-                return [
-                    'success' => false,
-                    'url' => $urlAktivasi,
-                ];
+                return ['success' => false, 'url' => $urlAktivasi];
             }
 
             Log::info('Email aktivasi karyawan berhasil dikirim.', [
                 'karyawan_id' => $karyawan->id,
-                'email' => $emailTujuan,
-                'mailer' => $mailer,
-                'mail_host' => config('mail.mailers.smtp.host'),
-                'mail_port' => config('mail.mailers.smtp.port'),
-                'mail_encryption' => config('mail.mailers.smtp.encryption'),
-                'from_address' => config('mail.from.address'),
-                'url_aktivasi' => $urlAktivasi,
+                'email'       => $emailTujuan,
             ]);
 
-            return [
-                'success' => true,
-                'url' => $urlAktivasi,
-            ];
+            return ['success' => true, 'url' => $urlAktivasi];
+
         } catch (\Throwable $e) {
             Log::error('Gagal mengirim email aktivasi karyawan', [
-                'karyawan_id' => $karyawan->id,
-                'email' => $karyawan->email,
-                'mailer' => config('mail.default'),
-                'mail_host' => config('mail.mailers.smtp.host'),
+                'karyawan_id'  => $karyawan->id,
+                'email'        => $karyawan->email,
+                'error'        => $e->getMessage(),
                 'url_aktivasi' => $urlAktivasi,
-                'error' => $e->getMessage(),
             ]);
 
-            return [
-                'success' => false,
-                'url' => $urlAktivasi,
-            ];
+            return ['success' => false, 'url' => $urlAktivasi];
         }
     }
 }

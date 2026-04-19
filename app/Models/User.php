@@ -17,6 +17,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'password',
         'google_id',
         'avatar',
+        'coffee_bean_progress', // ← tambah ini
     ];
 
     protected $hidden = [
@@ -24,7 +25,6 @@ class User extends Authenticatable implements MustVerifyEmail
         'remember_token',
     ];
 
-    // ✅ GANTI jadi ini (property, bukan method)
     protected $casts = [
         'email_verified_at' => 'datetime',
         'password' => 'hashed',

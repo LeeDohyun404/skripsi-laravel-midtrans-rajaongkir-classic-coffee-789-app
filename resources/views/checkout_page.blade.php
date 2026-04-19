@@ -41,10 +41,57 @@
 
     <div class="max-w-2xl mx-auto space-y-6">
 
+        @if(request('error') === 'payment_failed')
+        <div class="bg-red-50 border border-red-200 rounded-2xl px-5 py-4 flex items-start gap-3">
+            <span class="text-red-500 text-xl">❌</span>
+            <div>
+                <p class="font-bold text-red-700">Pembayaran Gagal</p>
+                <p class="text-sm text-red-600 mt-1">Terjadi kesalahan saat memproses pembayaran. Silakan coba lagi atau pilih metode pembayaran lain.</p>
+            </div>
+        </div>
+        @endif
+
+        @if(session('error'))
+        <div class="bg-red-50 border border-red-200 rounded-2xl px-5 py-4 flex items-start gap-3">
+            <span class="text-red-500 text-xl">❌</span>
+            <div>
+                <p class="font-bold text-red-700">{{ session('error') }}</p>
+            </div>
+        </div>
+        @endif
+
+        @php $voucherAktif = session('voucher_active'); @endphp
+
+        @php
+            // Hitung subtotal & voucherDiscount lebih awal untuk form action
+            $cartEarly = session()->get('cart', []);
+            $subtotalEarly = collect($cartEarly)->sum(fn($i) => $i['price'] * $i['quantity']);
+            $voucherDiscountEarly = 0;
+            if (session('voucher_active') && session('voucher_id')) {
+                $vm = \App\Models\Voucher::where('id', session('voucher_id'))
+                    ->where('status', 'active')->where('expires_at', '>', now())->first();
+                if ($vm) {
+                    $dp = collect($cartEarly)
+                        ->filter(fn($item) => isset($item['category']) && strtolower($item['category']) === 'minuman')
+                        ->map(fn($item) => (int)$item['price']);
+                    if ($dp->isEmpty()) {
+                        foreach ($cartEarly as $pid => $item) {
+                            if (is_numeric($pid)) {
+                                $prod = \Illuminate\Support\Facades\DB::table('products')->where('id', $pid)->first();
+                                if ($prod && strtolower($prod->category) === 'minuman') $dp->push((int)$item['price']);
+                            }
+                        }
+                    }
+                    if ($dp->isNotEmpty()) $voucherDiscountEarly = $dp->min();
+                }
+            }
+            $isFreeOrder = $voucherAktif && max(0, $subtotalEarly - $voucherDiscountEarly) == 0;
+        @endphp
+
         {{-- FORM DETAIL PEMESAN --}}
         <div class="bg-white p-6 rounded-3xl shadow-sm border border-stone-100">
             <h3 class="text-lg font-bold text-stone-800 mb-4">👤 Detail Pemesan</h3>
-            <form id="checkout-form" action="{{ route('payment.process') }}" method="POST">
+            <form id="checkout-form" action="{{ $isFreeOrder ? route('payment.cash') : route('payment.process') }}" method="POST">
                 @csrf
 
                 {{-- Nama (readonly dari user login) --}}
@@ -87,16 +134,32 @@
                 {{-- Metode Pesanan --}}
                 <div class="mb-2">
                     <label class="block text-sm font-bold text-stone-700 mb-2">Metode Pesanan</label>
-                    <div class="grid grid-cols-2 gap-4">
-                        <label class="border-2 border-stone-200 rounded-xl p-3 flex items-center justify-center cursor-pointer has-[:checked]:border-amber-500 has-[:checked]:bg-amber-50">
-                            <input type="radio" name="order_type" value="dine-in" class="mr-2" checked onchange="toggleMetode('dine-in')">
+                    @if($isFreeOrder)
+                        {{-- Gratis total: hanya dine-in, bawa pulang disembunyikan --}}
+                        <input type="hidden" name="order_type" value="dine-in">
+                        <div class="border-2 border-amber-500 bg-amber-50 rounded-xl p-3 flex items-center justify-center">
                             <span class="font-bold text-stone-700">🍽️ Makan di Sini</span>
-                        </label>
-                        <label class="border-2 border-stone-200 rounded-xl p-3 flex items-center justify-center cursor-pointer has-[:checked]:border-amber-500 has-[:checked]:bg-amber-50">
-                            <input type="radio" name="order_type" value="take-away" class="mr-2" onchange="toggleMetode('take-away')">
-                            <span class="font-bold text-stone-700">🛵 Bawa Pulang</span>
-                        </label>
-                    </div>
+                        </div>
+                        <div class="mt-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-700 font-semibold">
+                            🎉 Voucher aktif — hanya <strong>Makan di Sini</strong> &amp; pembayaran <strong>tunai (cash)</strong>
+                        </div>
+                    @else
+                        <div class="grid grid-cols-2 gap-4">
+                            <label class="border-2 border-stone-200 rounded-xl p-3 flex items-center justify-center cursor-pointer has-[:checked]:border-amber-500 has-[:checked]:bg-amber-50">
+                                <input type="radio" name="order_type" value="dine-in" class="mr-2" checked onchange="toggleMetode('dine-in')">
+                                <span class="font-bold text-stone-700">🍽️ Makan di Sini</span>
+                            </label>
+                            <label class="border-2 border-stone-200 rounded-xl p-3 flex items-center justify-center cursor-pointer has-[:checked]:border-amber-500 has-[:checked]:bg-amber-50">
+                                <input type="radio" name="order_type" value="take-away" class="mr-2" onchange="toggleMetode('take-away')">
+                                <span class="font-bold text-stone-700">🛵 Bawa Pulang</span>
+                            </label>
+                        </div>
+                        @if($voucherAktif)
+                        <div class="mt-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-700 font-semibold">
+                            🎉 Voucher aktif — diskon minuman termurah diterapkan otomatis
+                        </div>
+                        @endif
+                    @endif
                 </div>
 
                 {{-- FORM PENGIRIMAN (muncul kalau take-away) --}}
@@ -119,7 +182,7 @@
                         <p id="destination_selected" class="mt-2 text-sm text-amber-600 font-semibold hidden"></p>
                     </div>
 
-                    {{-- Pilih Layanan Kurir (muncul setelah destinasi dipilih) --}}
+                    {{-- Pilih Layanan Kurir --}}
                     <div id="kurir-container" class="hidden">
                         <label class="block text-sm font-bold mb-2">🚚 Pilih Layanan Pengiriman</label>
                         <div id="list-kurir" class="space-y-2">
@@ -147,19 +210,46 @@
                     {{-- List Produk dari Cart --}}
                     <div class="space-y-3 mb-4">
                         @php
-                            $cart = session()->get('cart', []);
+                            $cart     = session()->get('cart', []);
                             $subtotal = 0;
+
+                            // Hitung diskon voucher (minuman termurah)
+                            $voucherDiscount = 0;
+                            if (session('voucher_active') && session('voucher_id')) {
+                                $voucherModel = \App\Models\Voucher::where('id', session('voucher_id'))
+                                    ->where('status', 'active')
+                                    ->where('expires_at', '>', now())
+                                    ->first();
+                                if ($voucherModel) {
+                                    $drinkPrices = collect($cart)
+                                        ->filter(fn($item) => isset($item['category']) && strtolower($item['category']) === 'minuman')
+                                        ->map(fn($item) => (int)$item['price']);
+
+                                    // Fallback: cari dari database jika category tidak ada di session
+                                    if ($drinkPrices->isEmpty()) {
+                                        foreach ($cart as $pid => $item) {
+                                            if (is_numeric($pid)) {
+                                                $prod = \Illuminate\Support\Facades\DB::table('products')->where('id', $pid)->first();
+                                                if ($prod && strtolower($prod->category) === 'minuman') {
+                                                    $drinkPrices->push((int)$item['price']);
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    if ($drinkPrices->isNotEmpty()) {
+                                        $voucherDiscount = $drinkPrices->min();
+                                    }
+                                }
+                            }
                         @endphp
 
                         @forelse ($cart as $id => $item)
-                            @php
-                                $subtotal += $item['price'] * $item['quantity'];
-                            @endphp
+                            @php $subtotal += $item['price'] * $item['quantity']; @endphp
                             <div class="flex items-center justify-between py-2">
                                 <div class="flex items-center gap-3">
                                     @if(isset($item['image']) && $item['image'])
-                                       {{-- ✅ BENAR --}}
-                                    <img src="{{ asset('images/'.$item['image']) }}" class="w-12 h-12 rounded-xl object-cover" alt="{{ $item['name'] }}">
+                                        <img src="{{ asset('images/'.$item['image']) }}" class="w-12 h-12 rounded-xl object-cover" alt="{{ $item['name'] }}">
                                     @else
                                         <div class="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center text-xl">☕</div>
                                     @endif
@@ -175,10 +265,9 @@
                         @endforelse
                     </div>
 
-                    {{-- Garis pemisah --}}
                     <div class="border-t border-dashed border-stone-200 my-3"></div>
 
-                    {{-- Subtotal Produk --}}
+                    {{-- Subtotal --}}
                     <div class="flex justify-between items-center mb-2">
                         <span class="text-stone-600">Subtotal Produk</span>
                         <span class="font-bold text-stone-800" id="subtotal-display">
@@ -192,27 +281,46 @@
                         <span class="font-bold text-stone-800" id="ongkir-display">—</span>
                     </div>
 
-                    {{-- Garis pemisah --}}
+                    {{-- Diskon Voucher --}}
+                    @if($voucherDiscount > 0)
+                    <div class="flex justify-between items-center mb-2 text-amber-600">
+                        <span class="font-semibold">🎉 Diskon Voucher</span>
+                        <span class="font-bold">- Rp {{ number_format($voucherDiscount, 0, ',', '.') }}</span>
+                    </div>
+                    @endif
+
                     <div class="border-t border-stone-200 my-3"></div>
 
                     {{-- Total --}}
                     <div class="flex justify-between items-center">
                         <span class="text-lg font-bold text-stone-800">Total</span>
                         <span class="text-xl font-bold text-amber-600" id="total-display">
-                            Rp {{ number_format($subtotal, 0, ',', '.') }}
+                            Rp {{ number_format(max(0, $subtotal - $voucherDiscount), 0, ',', '.') }}
                         </span>
                     </div>
                 </div>
 
                 {{-- Hidden inputs --}}
                 <input type="hidden" name="subtotal" value="{{ $subtotal }}">
-                <input type="hidden" name="total" id="input-total" value="{{ $subtotal }}">
+                <input type="hidden" name="total" id="input-total" value="{{ max(0, $subtotal - $voucherDiscount) }}">
+
+                {{-- Hidden: tandai metode pembayaran --}}
+                @if($isFreeOrder)
+                    <input type="hidden" name="payment_method" value="cash">
+                @endif
 
                 {{-- Tombol Bayar --}}
-                <button type="submit" id="btn-bayar"
-                    class="w-full bg-stone-900 text-white py-4 rounded-2xl font-bold mt-6 hover:bg-amber-600 transition text-lg">
-                    💳 LANJUT KE PEMBAYARAN
-                </button>
+                @if($isFreeOrder)
+                    <button type="submit" id="btn-bayar"
+                        class="w-full bg-amber-600 text-white py-4 rounded-2xl font-bold mt-6 hover:bg-amber-700 transition text-lg">
+                        🎉 KLAIM PESANAN
+                    </button>
+                @else
+                    <button type="submit" id="btn-bayar"
+                        class="w-full bg-stone-900 text-white py-4 rounded-2xl font-bold mt-6 hover:bg-amber-600 transition text-lg">
+                        💳 LANJUT KE PEMBAYARAN
+                    </button>
+                @endif
 
             </form>
         </div>
@@ -221,8 +329,9 @@
 </div>
 
 <script>
-    const subtotal = {{ $subtotal }};
-    let ongkirValue = 0;
+    const subtotal       = {{ $subtotal }};
+    const voucherDiscount = {{ $voucherDiscount }};
+    let ongkirValue      = 0;
 
     function toggleMetode(type) {
         if (type === 'take-away') {
@@ -237,8 +346,9 @@
     }
 
     function updateTotal() {
-        let total = subtotal + ongkirValue;
-        $('#ongkir-display').text('Rp ' + ongkirValue.toLocaleString('id-ID'));
+        let total = subtotal + ongkirValue - voucherDiscount;
+        if (total < 0) total = 0;
+        $('#ongkir-display').text(ongkirValue > 0 ? 'Rp ' + ongkirValue.toLocaleString('id-ID') : '—');
         $('#total-display').text('Rp ' + total.toLocaleString('id-ID'));
         $('#input-total').val(total);
         $('#selected_ongkir').val(ongkirValue);
@@ -249,8 +359,6 @@
         $('#selected_service').val(service);
         $('#selected_courier_name').val(courierName);
         updateTotal();
-
-        // Highlight kurir terpilih
         $('.kurir-card').removeClass('selected');
         $('#kurir-' + service).addClass('selected');
     }
@@ -264,11 +372,11 @@
         }
 
         $.each(data, function (i, item) {
-            let svc       = item.service ?? item.code ?? '';
-            let desc      = item.description ?? '';
+            let svc         = item.service ?? item.code ?? '';
+            let desc        = item.description ?? '';
             let courierName = item.name ?? '';
-            let price     = item.cost ?? 0;
-            let etd       = item.etd ?? '-';
+            let price       = item.cost ?? 0;
+            let etd         = item.etd ?? '-';
 
             $('#list-kurir').append(
                 '<div class="kurir-card" id="kurir-' + svc + '" onclick="pilihKurir(' + price + ', \'' + svc + '\', \'' + courierName + '\')">' +
@@ -288,12 +396,9 @@
     }
 
     function loadOngkir(destinationId) {
-        let courier = 'jne:jnt:sicepat:anteraja:pos:tiki';
-
         $('#list-kurir').html('<p class="text-gray-400 text-sm">⏳ Memuat layanan kurir...</p>');
         $('#kurir-container').removeClass('hidden');
 
-        // Load semua kurir populer sekaligus
         let couriers = ['jne', 'jnt', 'sicepat'];
         let allData  = [];
         let done     = 0;
@@ -328,7 +433,6 @@
     $(document).ready(function () {
         let searchTimeout = null;
 
-       // Autocomplete search destinasi
         $('#destination_search').on('input', function () {
             let keyword = $(this).val().trim();
 
@@ -336,17 +440,13 @@
                 $('#destination_dropdown').addClass('hidden').html('');
                 $('#destination_id').val('');
                 $('#destination_selected').addClass('hidden').text('');
-                $('#kurir-container').addClass('hidden'); // ✅ sudah ada
-                
-                // ✅ TAMBAHKAN INI — reset ongkir kalau user ganti destinasi
+                $('#kurir-container').addClass('hidden');
                 $('#list-kurir').html('<p class="text-gray-400 text-sm">Pilih destinasi dulu untuk melihat layanan kurir...</p>');
                 ongkirValue = 0;
                 updateTotal();
-                
                 return;
             }
 
-            // ✅ TAMBAHKAN INI JUGA — reset saat mulai ngetik lagi
             $('#kurir-container').addClass('hidden');
             $('#destination_id').val('');
             $('#destination_selected').addClass('hidden');
@@ -391,7 +491,6 @@
             }, 400);
         });
 
-        // Pilih dari dropdown → otomatis load ongkir
         $(document).on('click', '.autocomplete-item[data-id]', function () {
             let id    = $(this).data('id');
             let label = $(this).data('label');
@@ -401,28 +500,24 @@
             $('#destination_dropdown').addClass('hidden').html('');
             $('#destination_selected').removeClass('hidden').text('✅ Terpilih: ' + label);
 
-            // Reset ongkir & total
             ongkirValue = 0;
             updateTotal();
             $('#ongkir-display').text('Pilih layanan kurir...');
 
-            // Load ongkir otomatis
             loadOngkir(id);
         });
 
-        // Tutup dropdown klik di luar
         $(document).on('click', function (e) {
             if (!$(e.target).closest('.search-wrapper').length) {
                 $('#destination_dropdown').addClass('hidden');
             }
         });
 
-        // Validasi form sebelum submit
         $('#checkout-form').on('submit', function (e) {
-            let phone       = $('#phone').val();
-            let orderType   = $('input[name="order_type"]:checked').val();
-            let destId      = $('#destination_id').val();
-            let ongkirVal   = $('#selected_ongkir').val();
+            let phone     = $('#phone').val();
+            let orderType = $('input[name="order_type"]:checked').val();
+            let destId    = $('#destination_id').val();
+            let ongkirVal = $('#selected_ongkir').val();
 
             if (!phone || phone.length < 8) {
                 e.preventDefault();

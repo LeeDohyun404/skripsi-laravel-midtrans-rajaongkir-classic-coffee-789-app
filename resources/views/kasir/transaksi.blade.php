@@ -137,6 +137,12 @@
             font-size: 18px;
         }
 
+        .badge-purple {
+            background: #f3e8ff;
+            color: #7c3aed;
+            border: 1px solid #ddd6fe;
+        }
+
         .empty-state {
             text-align: center;
             color: var(--text-muted);
@@ -536,14 +542,18 @@
                                                 'pending'    => 'badge-gold',
                                                 'processing' => 'badge-blue',
                                                 'completed'  => 'badge-green',
+                                                'success'    => 'badge-green',
                                                 'cancelled'  => 'badge-red',
+                                                'claimed'    => 'badge-purple',
                                                 default      => 'badge-gray',
                                             };
                                             $label = match($o->status) {
                                                 'pending'    => 'Pending',
                                                 'processing' => 'Diproses',
                                                 'completed'  => 'Selesai',
+                                                'success'    => 'Selesai',
                                                 'cancelled'  => 'Dibatalkan',
+                                                'claimed'    => '🎉 Diklaim',
                                                 default      => ucfirst($o->status),
                                             };
                                         @endphp
@@ -557,6 +567,7 @@
                                             <button
                                                 type="button"
                                                 class="btn btn-outline btn-sm btn-icon btn-detail"
+                                                data-id="{{ $o->id }}"
                                                 data-number="{{ $o->number }}"
                                                 data-nama="{{ $o->customer_name }}"
                                                 data-telp="{{ $o->customer_phone }}"
@@ -828,28 +839,72 @@
         </div>
     </div>
 
-    <div class="modal-panel" id="modalDetail">
-        <div class="modal-card modal-sm">
-            <div class="modal-card-header">
-                <h3>Detail Pesanan <span id="detailNomor"></span></h3>
-            </div>
-            <div class="modal-card-body">
-                <div class="detail-grid">
-                    <div class="detail-item"><span class="detail-label">Pelanggan</span><div class="detail-value" id="detailNama"></div></div>
-                    <div class="detail-item"><span class="detail-label">Telepon</span><div class="detail-value" id="detailTelp"></div></div>
-                    <div class="detail-item"><span class="detail-label">Email</span><div class="detail-value" id="detailEmail"></div></div>
-                    <div class="detail-item"><span class="detail-label">Tipe Order</span><div class="detail-value" id="detailTipe"></div></div>
-                    <div class="detail-item"><span class="detail-label">Total</span><div class="detail-value" id="detailTotal"></div></div>
-                    <div class="detail-item"><span class="detail-label">Status</span><div class="detail-value" id="detailStatus"></div></div>
-                    <div class="detail-item"><span class="detail-label">Alamat</span><div class="detail-value" id="detailAlamat"></div></div>
-                    <div class="detail-item"><span class="detail-label">Catatan</span><div class="detail-value" id="detailCatatan"></div></div>
+ <div class="modal-panel" id="modalDetail">
+    <div class="modal-card" style="max-width:660px;">
+        <div class="modal-card-header">
+            <h3>Detail Pesanan <span id="detailNomor"></span></h3>
+        </div>
+        <div class="modal-card-body">
+ 
+            {{-- Info Pelanggan --}}
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;">
+                <div class="detail-item"><span class="detail-label">Pelanggan</span><div class="detail-value" id="detailNama"></div></div>
+                <div class="detail-item"><span class="detail-label">Telepon</span><div class="detail-value" id="detailTelp"></div></div>
+                <div class="detail-item"><span class="detail-label">Email</span><div class="detail-value" id="detailEmail"></div></div>
+                <div class="detail-item"><span class="detail-label">Tipe Order</span><div class="detail-value" id="detailTipe"></div></div>
+                <div class="detail-item"><span class="detail-label">Status</span><div class="detail-value" id="detailStatus"></div></div>
+                <div class="detail-item" id="detailKurirWrap" style="display:none;">
+                    <span class="detail-label">Kurir</span>
+                    <div class="detail-value" id="detailKurir"></div>
                 </div>
+                <div class="detail-item" style="grid-column:1/-1;"><span class="detail-label">Alamat</span><div class="detail-value" id="detailAlamat"></div></div>
+                <div class="detail-item" style="grid-column:1/-1;"><span class="detail-label">Catatan</span><div class="detail-value" id="detailCatatan"></div></div>
             </div>
-            <div class="modal-card-footer">
-                <button type="button" class="btn btn-outline btn-sm" onclick="tutupModal('modalDetail')">Tutup</button>
+ 
+            {{-- Tabel Produk --}}
+            <h4 style="font-family:'Playfair Display',serif;color:var(--brown-mid);margin-bottom:10px;font-size:16px;font-weight:400;">
+                🛍 Produk yang Dibeli
+            </h4>
+            <div style="border:1px solid var(--cream-dark);border-radius:10px;overflow:hidden;">
+                <table class="mini-table" style="width:100%;">
+                    <thead>
+                        <tr>
+                            <th>Produk</th>
+                            <th style="text-align:center;width:60px;">Qty</th>
+                            <th style="text-align:right;width:110px;">Harga</th>
+                            <th style="text-align:right;width:110px;">Subtotal</th>
+                        </tr>
+                    </thead>
+                    <tbody id="detailItemBody">
+                        <tr><td colspan="4" class="empty-state">Memuat...</td></tr>
+                    </tbody>
+                    <tfoot>
+                        <tr id="detailRowSubtotal" style="display:none;">
+                            <td colspan="3" style="text-align:right;color:var(--text-muted);font-size:13px;">Subtotal</td>
+                            <td style="text-align:right;" id="detailSubtotalVal"></td>
+                        </tr>
+                        <tr id="detailRowOngkir" style="display:none;">
+                            <td colspan="3" style="text-align:right;color:var(--text-muted);font-size:13px;">🚚 Ongkos Kirim</td>
+                            <td style="text-align:right;" id="detailOngkirVal"></td>
+                        </tr>
+                        <tr id="detailRowVoucher" style="display:none;">
+                            <td colspan="3" style="text-align:right;color:#b45309;font-size:13px;">🎉 Diskon Voucher</td>
+                            <td style="text-align:right;color:#b45309;font-weight:600;" id="detailVoucherVal"></td>
+                        </tr>
+                        <tr>
+                            <td colspan="3" style="text-align:right;font-weight:700;">Total</td>
+                            <td style="text-align:right;font-weight:700;" id="detailTotalVal"></td>
+                        </tr>
+                    </tfoot>
+                </table>
             </div>
+ 
+        </div>
+        <div class="modal-card-footer">
+            <button type="button" class="btn btn-outline btn-sm" onclick="tutupModal('modalDetail')">Tutup</button>
         </div>
     </div>
+</div>
 @endsection
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -1235,20 +1290,98 @@
             });
         }
 
-        document.addEventListener('click', function(e) {
+      document.addEventListener('click', function(e) {
             const btn = e.target.closest('.btn-detail');
             if (!btn) return;
+ 
             const d = btn.dataset;
-            document.getElementById('detailNomor').textContent = '#' + (d.number || '-');
-            document.getElementById('detailNama').textContent = d.nama || '-';
-            document.getElementById('detailTelp').textContent = d.telp || '-';
-            document.getElementById('detailEmail').textContent = d.email || '-';
-            document.getElementById('detailTipe').textContent = d.tipe || '-';
-            document.getElementById('detailTotal').textContent = 'Rp ' + (d.total || '0');
-            document.getElementById('detailStatus').textContent = d.status || '-';
-            document.getElementById('detailAlamat').textContent = d.alamat || '-';
+ 
+            // Isi info statis dari data-* dulu (langsung tampil cepat)
+            document.getElementById('detailNomor').textContent   = '#' + (d.number  || '-');
+            document.getElementById('detailNama').textContent    = d.nama    || '-';
+            document.getElementById('detailTelp').textContent    = d.telp    || '-';
+            document.getElementById('detailEmail').textContent   = d.email   || '-';
+            document.getElementById('detailTipe').textContent    = d.tipe    || '-';
+            document.getElementById('detailStatus').textContent  = d.status  || '-';
+            document.getElementById('detailAlamat').textContent  = d.alamat  || '-';
             document.getElementById('detailCatatan').textContent = d.catatan || '-';
+ 
+            // Reset tabel & kurir
+            document.getElementById('detailItemBody').innerHTML         = '<tr><td colspan="4" class="empty-state">Memuat...</td></tr>';
+            document.getElementById('detailRowSubtotal').style.display  = 'none';
+            document.getElementById('detailRowOngkir').style.display    = 'none';
+            document.getElementById('detailKurirWrap').style.display    = 'none';
+            document.getElementById('detailTotalVal').textContent       = 'Rp ' + (d.total || '0');
+ 
             bukaModal('modalDetail');
+ 
+            // Fetch detail items via AJAX
+            fetch(`/kasir/detail-pesanan/${d.id}`, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(r => r.json())
+            .then(data => {
+ 
+                // Kurir — tampilkan jika ada
+                if (data.courier_name && data.courier_name !== '-' && data.courier_name !== null) {
+                    const layanan = data.courier_service && data.courier_service !== '-'
+                        ? ' — ' + data.courier_service
+                        : '';
+                    document.getElementById('detailKurir').textContent = data.courier_name + layanan;
+                    document.getElementById('detailKurirWrap').style.display = '';
+                }
+ 
+                // Baris produk
+                if (!data.items || data.items.length === 0) {
+                    document.getElementById('detailItemBody').innerHTML =
+                        '<tr><td colspan="4" class="empty-state">Tidak ada item untuk pesanan ini.</td></tr>';
+                } else {
+                    let rows = '';
+                    data.items.forEach(item => {
+                        const thumb = item.product_image
+                            ? `<img src="/images/${item.product_image}" class="product-thumb" alt="${item.product_name}">`
+                            : `<div class="product-fallback">☕</div>`;
+ 
+                        rows += `<tr>
+                            <td>
+                                <div class="product-inline">
+                                    ${thumb}
+                                    <span style="font-weight:600;">${item.product_name}</span>
+                                </div>
+                            </td>
+                            <td style="text-align:center;">${item.quantity}×</td>
+                            <td style="text-align:right;">Rp ${parseInt(item.price).toLocaleString('id-ID')}</td>
+                            <td style="text-align:right;font-weight:600;">Rp ${parseInt(item.subtotal).toLocaleString('id-ID')}</td>
+                        </tr>`;
+                    });
+                    document.getElementById('detailItemBody').innerHTML = rows;
+                }
+ 
+                // Subtotal
+                if (data.subtotal > 0) {
+                    document.getElementById('detailSubtotalVal').textContent = 'Rp ' + parseInt(data.subtotal).toLocaleString('id-ID');
+                    document.getElementById('detailRowSubtotal').style.display = '';
+                }
+ 
+                // Ongkir
+                if (data.ongkir > 0) {
+                    document.getElementById('detailOngkirVal').textContent = 'Rp ' + parseInt(data.ongkir).toLocaleString('id-ID');
+                    document.getElementById('detailRowOngkir').style.display = '';
+                }
+
+                // Diskon Voucher
+                if (data.voucher_discount > 0) {
+                    document.getElementById('detailVoucherVal').textContent = '- Rp ' + parseInt(data.voucher_discount).toLocaleString('id-ID');
+                    document.getElementById('detailRowVoucher').style.display = '';
+                }
+ 
+                // Total final dari server
+                document.getElementById('detailTotalVal').textContent = 'Rp ' + parseInt(data.total_price).toLocaleString('id-ID');
+            })
+            .catch(() => {
+                document.getElementById('detailItemBody').innerHTML =
+                    '<tr><td colspan="4" class="empty-state" style="color:#c0392b;">Gagal memuat data. Coba lagi.</td></tr>';
+            });
         });
     </script>
 @endpush
