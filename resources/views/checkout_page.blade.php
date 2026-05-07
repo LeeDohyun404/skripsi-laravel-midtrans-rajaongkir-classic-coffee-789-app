@@ -86,6 +86,21 @@
                 }
             }
             $isFreeOrder = $voucherAktif && max(0, $subtotalEarly - $voucherDiscountEarly) == 0;
+
+            // ── Deteksi apakah keranjang mengandung makanan ──
+            $hasMakanan = false;
+            $hasMinuman = false;
+            foreach ($cartEarly as $pid => $item) {
+                $cat = strtolower($item['category'] ?? '');
+                if (empty($cat) && is_numeric($pid)) {
+                    $prod = \Illuminate\Support\Facades\DB::table('products')->where('id', $pid)->value('category');
+                    $cat = strtolower($prod ?? '');
+                }
+                if ($cat === 'makanan') $hasMakanan = true;
+                if ($cat === 'minuman') $hasMinuman = true;
+            }
+            // Jika ada makanan → force dine-in
+            $forceDineIn = $isFreeOrder || $hasMakanan;
         @endphp
 
         {{-- FORM DETAIL PEMESAN --}}
@@ -143,6 +158,17 @@
                         <div class="mt-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-700 font-semibold">
                             🎉 Voucher aktif — hanya <strong>Makan di Sini</strong> &amp; pembayaran <strong>tunai (cash)</strong>
                         </div>
+                    @elseif($forceDineIn)
+                        {{-- Ada makanan di keranjang → force dine-in --}}
+                        <input type="hidden" name="order_type" value="dine-in">
+                        <div class="border-2 border-amber-500 bg-amber-50 rounded-xl p-3 flex items-center justify-center">
+                            <span class="font-bold text-stone-700">🍽️ Makan di Sini</span>
+                        </div>
+                        @if($hasMakanan)
+                        <div class="mt-3 bg-orange-50 border border-orange-200 rounded-xl px-4 py-3 text-sm text-orange-700 font-semibold">
+                            🍔 Pesananmu mengandung <strong>makanan</strong> — hanya tersedia metode <strong>Makan di Sini</strong>
+                        </div>
+                        @endif
                     @else
                         <div class="grid grid-cols-2 gap-4">
                             <label class="border-2 border-stone-200 rounded-xl p-3 flex items-center justify-center cursor-pointer has-[:checked]:border-amber-500 has-[:checked]:bg-amber-50">

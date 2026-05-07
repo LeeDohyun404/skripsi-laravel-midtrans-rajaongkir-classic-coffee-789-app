@@ -154,6 +154,13 @@
             class="tab-btn px-5 py-2 rounded-xl text-sm font-bold text-stone-600">
             <i class="fas fa-user-edit mr-1.5"></i>Kelola Akun
         </button>
+        <button onclick="showTab('pengaduan')" id="tab-pengaduan"
+            class="tab-btn px-5 py-2 rounded-xl text-sm font-bold text-stone-600">
+            <i class="fas fa-exclamation-circle mr-1.5"></i>Pengaduan
+            @if(isset($totalPengaduan) && $totalPengaduan > 0)
+                <span class="ml-1 w-2 h-2 bg-red-500 rounded-full inline-block align-middle"></span>
+            @endif
+        </button>
     </div>
 
 
@@ -349,6 +356,80 @@
 
                         </div>
                     </div>
+
+                    {{-- Tracking Status (khusus Take Away) --}}
+                    @if($order->order_type === 'take-away' && !in_array($order->status, ['pending']))
+                    @php
+                        $ts = $order->tracking_status ?? 'dibuat';
+                        $steps = ['dibuat','dikemas','dikirim_ke_pengirim','dikirim','selesai'];
+                        $stepLabels = [
+                            'dibuat'              => ['label'=>'Pesanan Dibuat',         'icon'=>'📋'],
+                            'dikemas'             => ['label'=>'Pesanan Dikemas',        'icon'=>'📦'],
+                            'dikirim_ke_pengirim' => ['label'=>'Diserahkan ke Pengirim', 'icon'=>'🤝'],
+                            'dikirim'             => ['label'=>'Sedang Dikirim',         'icon'=>'🚚'],
+                            'selesai'             => ['label'=>'Pesanan Selesai',        'icon'=>'✅'],
+                        ];
+                        $currentStep = array_search($ts, $steps);
+                        $isBatal = $ts === 'batal';
+                    @endphp
+
+                    <div class="border-t border-stone-100 px-6 py-5">
+                        <h4 class="text-[10px] font-black uppercase tracking-widest text-stone-400 mb-4">🚚 Status Pengiriman</h4>
+
+                        @if($isBatal)
+                            <div class="bg-red-50 border border-red-200 rounded-2xl px-4 py-3 flex items-center gap-3">
+                                <span class="text-lg">❌</span>
+                                <div>
+                                    <p class="text-sm font-bold text-red-700">Pengiriman Dibatalkan</p>
+                                    @php $lastTracking = $order->trackings->last(); @endphp
+                                    @if($lastTracking && $lastTracking->keterangan)
+                                        <p class="text-xs text-red-500">{{ $lastTracking->keterangan }}</p>
+                                    @endif
+                                </div>
+                            </div>
+                        @else
+                            {{-- Progress bar --}}
+                            <div style="display:flex;align-items:flex-start;gap:0;margin-bottom:16px;">
+                                @foreach($steps as $i => $step)
+                                @php
+                                    $done    = $currentStep !== false && $i <= $currentStep;
+                                    $current = $currentStep !== false && $i === $currentStep;
+                                    $cfg     = $stepLabels[$step];
+                                @endphp
+                                <div style="flex:1;display:flex;flex-direction:column;align-items:center;position:relative;">
+                                    {{-- Connector line kiri --}}
+                                    @if($i > 0)
+                                    <div style="position:absolute;top:14px;right:50%;width:100%;height:2px;background:{{ $done ? '#d97706' : '#e5e7eb' }};z-index:0;"></div>
+                                    @endif
+                                    {{-- Icon --}}
+                                    <div style="width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;z-index:1;position:relative;
+                                        border:2px solid {{ $done ? '#d97706' : '#e5e7eb' }};
+                                        background:{{ $current ? '#d97706' : ($done ? '#fef3c7' : '#f9fafb') }};">
+                                        {{ $cfg['icon'] }}
+                                    </div>
+                                    {{-- Label --}}
+                                    <p style="font-size:9px;text-align:center;margin-top:4px;font-weight:{{ $current ? '800' : '500' }};color:{{ $done ? '#92400e' : '#9ca3af' }};line-height:1.3;">
+                                        {{ $cfg['label'] }}
+                                    </p>
+                                </div>
+                                @endforeach
+                            </div>
+
+                            {{-- Tombol konfirmasi selesai --}}
+                            @if($ts === 'dikirim')
+                            <form action="{{ route('orders.selesai', $order->id) }}" method="POST"
+                                  onsubmit="return confirm('Konfirmasi pesanan sudah diterima?')">
+                                @csrf
+                                <button type="submit"
+                                    style="width:100%;padding:10px;background:#16a34a;color:white;border:none;border-radius:12px;font-size:13px;font-weight:700;cursor:pointer;">
+                                    ✅ Pesanan Sudah Diterima
+                                </button>
+                            </form>
+                            @endif
+                        @endif
+                    </div>
+                    @endif
+
                 </div>
                 @endforeach
             </div>
@@ -640,6 +721,107 @@
         </div>
     </div>
 
+    {{-- ══════════════════════════════════════
+         TAB: PENGADUAN
+    ══════════════════════════════════════ --}}
+    <div id="panel-pengaduan" class="hidden">
+
+        {{-- Daftar pengaduan sebelumnya --}}
+        @if(isset($complaints) && $complaints->count() > 0)
+        <div class="mb-6">
+            <h3 class="text-stone-700 font-bold text-sm mb-3">📋 Riwayat Pengaduan</h3>
+            <div class="space-y-3">
+                @foreach($complaints as $c)
+                @php
+                    $jCfg = \App\Models\OrderComplaint::getJenis($c->jenis);
+                    $sCfg = \App\Models\OrderComplaint::getStatus($c->status);
+                @endphp
+                <div class="bg-white rounded-2xl border border-stone-100 shadow-sm p-4">
+                    <div class="flex items-center justify-between flex-wrap gap-2 mb-2">
+                        <div class="flex items-center gap-2">
+                            <span class="text-base">{{ $jCfg['icon'] }}</span>
+                            <span class="font-bold text-sm text-stone-800">{{ $jCfg['label'] }}</span>
+                        </div>
+                        <span style="background:{{ $sCfg['bg'] }};color:{{ $sCfg['color'] }};font-size:11px;font-weight:700;padding:3px 10px;border-radius:99px;">
+                            {{ $sCfg['label'] }}
+                        </span>
+                    </div>
+                    <p class="text-xs text-stone-500 mb-1">Pesanan: <strong>{{ $c->order->number ?? '-' }}</strong> · {{ \Carbon\Carbon::parse($c->created_at)->locale('id')->isoFormat('D MMM YYYY') }}</p>
+                    <p class="text-sm text-stone-600">{{ $c->detail }}</p>
+                    @if($c->catatan_operator)
+                    <div class="mt-2 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2">
+                        <p class="text-xs font-bold text-amber-700 mb-1">Respon Tim Classic Coffee:</p>
+                        <p class="text-xs text-amber-800">{{ $c->catatan_operator }}</p>
+                    </div>
+                    @endif
+                </div>
+                @endforeach
+            </div>
+        </div>
+        @endif
+
+        {{-- Form buat pengaduan baru --}}
+        <div class="bg-white rounded-3xl border border-stone-100 shadow-sm p-6">
+            <h3 class="font-serif italic text-stone-800 text-xl mb-1">Buat Pengaduan Baru</h3>
+            <p class="text-stone-400 text-xs mb-5">Laporkan masalah terkait pesanan kamu. Sertakan foto bukti untuk mempercepat proses.</p>
+
+            <form action="{{ route('complaint.store') }}" method="POST" enctype="multipart/form-data">
+                @csrf
+
+                {{-- Pilih Pesanan --}}
+                <div class="mb-4">
+                    <label class="block text-xs font-bold uppercase tracking-widest text-stone-400 mb-2">Pilih Pesanan *</label>
+                    <select name="order_id" required
+                        class="w-full border border-stone-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-amber-400 transition">
+                        <option value="">-- Pilih pesanan --</option>
+                        @foreach($orders as $o)
+                            @if($o->order_type === 'take-away' && $o->status === 'success')
+                            <option value="{{ $o->id }}">{{ $o->number }} — {{ \Carbon\Carbon::parse($o->created_at)->locale('id')->isoFormat('D MMM YYYY') }}</option>
+                            @endif
+                        @endforeach
+                    </select>
+                    @error('order_id')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
+                </div>
+
+                {{-- Jenis Pengaduan --}}
+                <div class="mb-4">
+                    <label class="block text-xs font-bold uppercase tracking-widest text-stone-400 mb-2">Jenis Pengaduan *</label>
+                    <select name="jenis" required
+                        class="w-full border border-stone-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-amber-400 transition">
+                        <option value="">-- Pilih jenis pengaduan --</option>
+                        @foreach(\App\Models\OrderComplaint::$jenisConfig as $key => $val)
+                            <option value="{{ $key }}">{{ $val['icon'] }} {{ $val['label'] }}</option>
+                        @endforeach
+                    </select>
+                    @error('jenis')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
+                </div>
+
+                {{-- Detail Pengaduan --}}
+                <div class="mb-4">
+                    <label class="block text-xs font-bold uppercase tracking-widest text-stone-400 mb-2">Detail Pengaduan *</label>
+                    <textarea name="detail" rows="4" required
+                        class="w-full border border-stone-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-amber-400 transition resize-none"
+                        placeholder="Jelaskan masalah yang kamu alami secara detail..."></textarea>
+                    @error('detail')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
+                </div>
+
+                {{-- Upload Foto Bukti --}}
+                <div class="mb-6">
+                    <label class="block text-xs font-bold uppercase tracking-widest text-stone-400 mb-2">Foto Bukti *</label>
+                    <input type="file" name="foto" accept="image/*" required
+                        class="w-full border border-stone-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-amber-400 transition">
+                    <p class="text-xs text-stone-400 mt-1">Format: JPG, PNG, WEBP. Maks 2MB.</p>
+                    @error('foto')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
+                </div>
+
+                <button type="submit"
+                    class="w-full bg-stone-900 hover:bg-amber-700 text-white font-bold py-3 rounded-2xl text-sm transition">
+                    📤 Kirim Pengaduan
+                </button>
+            </form>
+        </div>
+    </div>
+
 </div>
 </div>
 
@@ -647,7 +829,7 @@
 
 <script>
 function showTab(tab) {
-    ['pesanan','voucher','akun'].forEach(t => {
+    ['pesanan','voucher','akun','pengaduan'].forEach(t => {
         document.getElementById('panel-'+t).classList.toggle('hidden', t !== tab);
         const btn = document.getElementById('tab-'+t);
         btn.classList.toggle('active', t === tab);
@@ -728,6 +910,9 @@ function getTokenDanBayar(orderId) {
 @endif
 @if(session('voucher_earned'))
     showTab('voucher');
+@endif
+@if(session()->has('_old_input') && request()->routeIs('complaint.store'))
+    showTab('pengaduan');
 @endif
 </script>
 

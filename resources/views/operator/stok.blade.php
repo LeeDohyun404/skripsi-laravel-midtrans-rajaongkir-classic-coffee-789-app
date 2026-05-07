@@ -12,6 +12,13 @@
     <a href="{{ route('operator.stok') }}" class="nav-item {{ request()->routeIs('operator.stok') ? 'active' : '' }}">
         <span class="nav-icon">📦</span> Manajemen Stok
     </a>
+    <span class="nav-section-label">Pengiriman</span>
+    <a href="{{ route('operator.tracking') }}" class="nav-item {{ request()->routeIs('operator.tracking') ? 'active' : '' }}">
+        <span class="nav-icon">🚚</span> Tracking Pesanan
+    </a>
+    <a href="{{ route('operator.pengaduan') }}" class="nav-item {{ request()->routeIs('operator.pengaduan*') ? 'active' : '' }}">
+        <span class="nav-icon">📋</span> Kelola Pengaduan
+    </a>
 @endsection
 
 @push('styles')

@@ -9,6 +9,8 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 use App\Notifications\NewOrderNotification;
 use App\Models\Voucher;
+use App\Models\Order;
+use App\Models\OrderTracking;
 use App\Services\CoffeeBeanService;
 use Midtrans\Config;
 use Midtrans\Snap;
@@ -45,7 +47,6 @@ class OrderController extends Controller
                                    ->first();
 
             if ($voucherModel) {
-                // Cari minuman dengan harga unit paling murah di keranjang
                 $drinkPrices = collect($cart)
                     ->filter(fn($item) =>
                         isset($item['category']) &&
@@ -61,7 +62,6 @@ class OrderController extends Controller
             }
         }
 
-        // Total akhir setelah diskon
         $total = max(0, $subtotal + $ongkir - $voucherDiscount);
 
         // ── Simpan order ke database ─────────────────────────────────────
@@ -81,11 +81,11 @@ class OrderController extends Controller
             'ongkir'             => $ongkir,
             'address'            => $address,
             'notes'              => $request->notes ?? null,
-            // kolom voucher
             'used_voucher'       => $usedVoucher ? 1 : 0,
             'voucher_id'         => $usedVoucher ? $voucherModel->id : null,
             'voucher_discount'   => $voucherDiscount,
             'exclude_from_stats' => $usedVoucher ? 1 : 0,
+            'tracking_status'    => 'dibuat',
             'created_at'         => now(),
             'updated_at'         => now(),
         ]);
@@ -105,10 +105,17 @@ class OrderController extends Controller
             ]);
         }
 
-        // ── Jika pakai voucher dan total = 0: cash only, tidak proses Midtrans ─────────
+        // ── Simpan tracking awal ─────────────────────────────────────────
+        OrderTracking::create([
+            'order_id'   => $orderId,
+            'status'     => 'dibuat',
+            'keterangan' => 'Pesanan berhasil dibuat.',
+            'updated_by' => 'Sistem',
+        ]);
+
+        // ── Jika pakai voucher dan total = 0 ─────────────────────────────
         if ($usedVoucher && $total == 0) {
-            // Tandai voucher sebagai terpakai di database
-            $orderModel = \App\Models\Order::find($orderId);
+            $orderModel = Order::find($orderId);
             if ($orderModel && $voucherModel) {
                 CoffeeBeanService::markVoucherUsed($orderModel, $voucherModel);
             }
@@ -119,7 +126,7 @@ class OrderController extends Controller
                 ->with('success', '🎉 Pesanan berhasil diklaim! Tunjukkan struk ini ke kasir untuk pembayaran tunai.');
         }
 
-        // ── Jika tidak pakai voucher: proses Midtrans seperti biasa ─────
+        // ── Proses Midtrans ──────────────────────────────────────────────
         $itemDetails = [];
         foreach ($cart as $item) {
             $itemDetails[] = [
@@ -232,20 +239,15 @@ class OrderController extends Controller
             $order = DB::table('orders')->where('number', $order_id)->first();
 
             if ($order) {
-                // ── Update biji kopi / tandai voucher terpakai ──────────
-                $orderModel = \App\Models\Order::find($order->id);
+                $orderModel = Order::find($order->id);
                 if ($orderModel) {
                     if ($orderModel->used_voucher && $orderModel->voucher_id) {
-                        // Tandai voucher sebagai terpakai
                         $voucher = Voucher::find($orderModel->voucher_id);
                         if ($voucher) {
                             CoffeeBeanService::markVoucherUsed($orderModel, $voucher);
                         }
-                        // Tetap proses progress biji kopi dari produk minuman lain
-                        // yang dibeli bersamaan (selain minuman gratis voucher)
                         CoffeeBeanService::processOrder($orderModel);
                     } else {
-                        // Order normal → tambah progress biji kopi
                         CoffeeBeanService::processOrder($orderModel);
                     }
                 }
@@ -270,7 +272,6 @@ class OrderController extends Controller
 
     /**
      * Konfirmasi order cash (untuk order pakai voucher yang bayar tunai)
-     * Dipanggil oleh admin dari panel admin ketika pembayaran tunai sudah diterima.
      */
     public function confirmCash($orderId)
     {
@@ -285,9 +286,8 @@ class OrderController extends Controller
             'updated_at' => now(),
         ]);
 
-        // Tandai voucher terpakai
         if ($order->voucher_id) {
-            $orderModel = \App\Models\Order::find($orderId);
+            $orderModel = Order::find($orderId);
             $voucher    = Voucher::find($order->voucher_id);
             if ($orderModel && $voucher) {
                 CoffeeBeanService::markVoucherUsed($orderModel, $voucher);
@@ -295,6 +295,32 @@ class OrderController extends Controller
         }
 
         return back()->with('success', 'Order #' . $order->number . ' dikonfirmasi lunas.');
+    }
+
+    /**
+     * Konfirmasi pesanan diterima oleh pelanggan
+     */
+    public function konfirmasiSelesai($orderId)
+    {
+        $user  = Auth::user();
+        $order = Order::where('id', $orderId)
+                      ->where('customer_email', $user->email)
+                      ->where('tracking_status', 'dikirim')
+                      ->firstOrFail();
+
+        $order->update([
+            'tracking_status' => 'selesai',
+            'status'          => 'success',
+        ]);
+
+        OrderTracking::create([
+            'order_id'   => $order->id,
+            'status'     => 'selesai',
+            'keterangan' => 'Pesanan dikonfirmasi diterima oleh pelanggan.',
+            'updated_by' => $user->name,
+        ]);
+
+        return back()->with('success', '✅ Terima kasih! Pesanan ' . $order->number . ' telah dikonfirmasi selesai.');
     }
 
     /**
@@ -324,7 +350,7 @@ class OrderController extends Controller
             ->where('id', $orderId)
             ->where('customer_email', $user->email)
             ->where('status', 'pending')
-            ->where('used_voucher', 0) // order voucher tidak butuh snap token
+            ->where('used_voucher', 0)
             ->first();
 
         if (!$order) {

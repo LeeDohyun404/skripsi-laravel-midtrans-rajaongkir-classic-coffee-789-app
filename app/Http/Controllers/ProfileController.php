@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
+use App\Models\OrderComplaint;
 
 class ProfileController extends Controller
 {
@@ -21,7 +22,7 @@ class ProfileController extends Controller
 
         // ── Statistik pesanan ──────────────────────────────
         $orders = Order::where('customer_email', $user->email)
-                       ->with('items')
+                       ->with(['items', 'trackings'])
                        ->latest()
                        ->get();
 
@@ -48,6 +49,13 @@ class ProfileController extends Controller
         // ── Riwayat voucher terpakai ───────────────────────
         $usedVouchers = Voucher::usedBy($user->id)->limit(5)->get();
 
+        // ── Pengaduan pelanggan ───────────────────────────
+        $complaints    = OrderComplaint::where('user_id', $user->id)
+                                       ->with('order')
+                                       ->latest()
+                                       ->get();
+        $totalPengaduan = $complaints->count();
+
         return view('profile', compact(
             'orders',
             'totalOrders',
@@ -55,6 +63,8 @@ class ProfileController extends Controller
             'pendingOrders',
             'activeVoucher',
             'usedVouchers',
+            'complaints',
+            'totalPengaduan',
         ));
     }
 

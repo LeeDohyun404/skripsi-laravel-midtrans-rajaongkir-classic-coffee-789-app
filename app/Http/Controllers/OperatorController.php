@@ -3,11 +3,17 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
+use App\Models\Order;
+use App\Models\OrderTracking;
 
 class OperatorController extends Controller
 {
+    // ══════════════════════════════════════════════════════════
+    // DASHBOARD & STOK (method lama — tetap ada)
+    // ══════════════════════════════════════════════════════════
+
     public function dashboard()
     {
         $totalProduk = DB::table('products')->count();
@@ -133,5 +139,118 @@ class OperatorController extends Controller
     {
         DB::table('products')->where('id', $id)->delete();
         return back()->with('success', 'Produk berhasil dihapus!');
+    }
+
+    // ══════════════════════════════════════════════════════════
+    // TRACKING (method baru)
+    // ══════════════════════════════════════════════════════════
+
+    public function tracking(Request $request)
+    {
+        $filter = $request->get('filter', 'semua');
+
+        $query = Order::with(['items', 'trackings'])
+                      ->where('order_type', 'take-away')
+                      ->whereNotIn('status', ['pending'])
+                      ->orderBy('created_at', 'desc');
+
+        if ($filter !== 'semua') {
+            $query->where('tracking_status', $filter);
+        }
+
+        $orders = $query->paginate(10)->withQueryString();
+
+        return view('operator.tracking', compact('orders'));
+    }
+
+    public function updateTracking(Request $request, $orderId)
+    {
+        $request->validate([
+            'status'     => 'required|in:dikemas,dikirim_ke_pengirim,dikirim,selesai,batal',
+            'keterangan' => 'nullable|string|max:500',
+        ]);
+
+        $order    = Order::findOrFail($orderId);
+        $operator = Auth::guard('karyawan')->user();
+
+        $validNextStatus = $this->getValidNextStatuses($order->tracking_status ?? 'dibuat');
+        if (!in_array($request->status, $validNextStatus)) {
+            return back()->with('error', 'Status tidak valid. Tidak bisa mundur ke status sebelumnya.');
+        }
+
+        $newStatus  = $request->status;
+        $keterangan = $request->keterangan;
+
+        if (empty($keterangan)) {
+            $keterangan = OrderTracking::$statusConfig[$newStatus]['desc'] ?? '';
+        }
+
+        $order->update(['tracking_status' => $newStatus]);
+
+        OrderTracking::create([
+            'order_id'   => $order->id,
+            'status'     => $newStatus,
+            'keterangan' => $keterangan,
+            'updated_by' => $operator->nama ?? 'Operator',
+        ]);
+
+        if ($newStatus === 'selesai') {
+            $order->update(['status' => 'success']);
+        }
+
+        $cfg = OrderTracking::getConfig($newStatus);
+        return back()->with('success', '✅ Status pesanan #' . $order->number . ' berhasil diperbarui ke "' . $cfg['label'] . '".');
+    }
+
+    private function getValidNextStatuses(string $current): array
+    {
+        $flow = [
+            'dibuat'              => ['dikemas', 'batal'],
+            'dikemas'             => ['dikirim_ke_pengirim', 'batal'],
+            'dikirim_ke_pengirim' => ['dikirim', 'batal'],
+            'dikirim'             => ['selesai', 'batal'],
+            'selesai'             => [],
+            'batal'               => [],
+        ];
+
+        return $flow[$current] ?? [];
+    }
+
+    // ══════════════════════════════════════════════════════════
+    // PENGADUAN
+    // ══════════════════════════════════════════════════════════
+
+    public function pengaduan(Request $request)
+    {
+        $filter = $request->get('filter', 'semua');
+
+        $query = \App\Models\OrderComplaint::with('order')
+                    ->orderBy('created_at', 'desc');
+
+        if ($filter !== 'semua') {
+            $query->where('status', $filter);
+        }
+
+        $complaints    = $query->paginate(10)->withQueryString();
+        $totalMenunggu = \App\Models\OrderComplaint::where('status', 'menunggu')->count();
+
+        return view('operator.complaint', compact('complaints', 'totalMenunggu'));
+    }
+
+    public function updatePengaduan(Request $request, $id)
+    {
+        $request->validate([
+            'status'           => 'required|in:menunggu,diproses,selesai,ditolak',
+            'catatan_operator' => 'nullable|string|max:1000',
+        ]);
+
+        $complaint = \App\Models\OrderComplaint::findOrFail($id);
+        $complaint->update([
+            'status'           => $request->status,
+            'catatan_operator' => $request->catatan_operator,
+        ]);
+
+        $cfg = \App\Models\OrderComplaint::getStatus($request->status);
+        return back()->with('success', '✅ Pengaduan berhasil diupdate ke "' . $cfg['label'] . '".');
     }
 }

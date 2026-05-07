@@ -18,6 +18,7 @@ use App\Http\Controllers\Admin\ProfilController;
 use App\Http\Controllers\StaffPasswordController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\VoucherController;
+use App\Http\Controllers\ComplaintController;
 
 // =============================================
 // ✅ API RAJAONGKIR — WAJIB PALING ATAS
@@ -143,6 +144,12 @@ Route::middleware(['auth'])->group(function () {
     // Struk & refresh token Midtrans
     Route::get('/orders/{id}/struk',          [OrderController::class, 'struk'])->name('orders.struk');
     Route::post('/orders/{id}/refresh-token', [OrderController::class, 'refreshToken'])->name('orders.refresh-token');
+
+    // ── Konfirmasi pesanan selesai oleh pelanggan ──
+    Route::post('/orders/{id}/selesai', [OrderController::class, 'konfirmasiSelesai'])->name('orders.selesai');
+
+    // ── Pengaduan pelanggan ──
+    Route::post('/complaint/store', [ComplaintController::class, 'store'])->name('complaint.store');
 
 });
 
@@ -278,6 +285,14 @@ Route::prefix('operator')->name('operator.')->middleware(['auth.karyawan', 'role
     Route::delete('/produk/{id}', [App\Http\Controllers\OperatorController::class, 'destroyProduk'])->name('produk.hapus');
     Route::post('/profil/nama', [ProfilController::class, 'gantiNama'])->name('profil.nama');
     Route::post('/profil/password', [ProfilController::class, 'ubahPassword'])->name('profil.password');
+
+    // ── TRACKING (baru) ──
+    Route::get('/tracking', [App\Http\Controllers\OperatorController::class, 'tracking'])->name('tracking');
+    Route::post('/tracking/{id}/update', [App\Http\Controllers\OperatorController::class, 'updateTracking'])->name('tracking.update');
+
+    // ── PENGADUAN (baru) ──
+    Route::get('/pengaduan', [App\Http\Controllers\OperatorController::class, 'pengaduan'])->name('pengaduan');
+    Route::post('/pengaduan/{id}/update', [App\Http\Controllers\OperatorController::class, 'updatePengaduan'])->name('pengaduan.update');
 });
 
 // =============================================
