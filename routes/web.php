@@ -27,11 +27,6 @@ Route::get('/api/search-destination', [RajaOngkirController::class, 'searchDesti
 Route::post('/api/ongkir', [RajaOngkirController::class, 'getCost']);
 
 // =============================================
-// MIDTRANS CALLBACK
-// =============================================
-Route::post('/api/midtrans-callback', [OrderController::class, 'notificationHandler']);
-
-// =============================================
 // HALAMAN UTAMA
 // =============================================
 Route::get('/', function () {

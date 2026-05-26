@@ -173,11 +173,11 @@
                         <div class="grid grid-cols-2 gap-4">
                             <label class="border-2 border-stone-200 rounded-xl p-3 flex items-center justify-center cursor-pointer has-[:checked]:border-amber-500 has-[:checked]:bg-amber-50">
                                 <input type="radio" name="order_type" value="dine-in" class="mr-2" checked onchange="toggleMetode('dine-in')">
-                                <span class="font-bold text-stone-700">🍽️ Makan di Sini</span>
+                                <span class="font-bold text-stone-700">🍽️ Dine in / Take Away</span>
                             </label>
                             <label class="border-2 border-stone-200 rounded-xl p-3 flex items-center justify-center cursor-pointer has-[:checked]:border-amber-500 has-[:checked]:bg-amber-50">
                                 <input type="radio" name="order_type" value="take-away" class="mr-2" onchange="toggleMetode('take-away')">
-                                <span class="font-bold text-stone-700">🛵 Bawa Pulang</span>
+                                <span class="font-bold text-stone-700">🛵 Layanan Antar</span>
                             </label>
                         </div>
                         @if($voucherAktif)
