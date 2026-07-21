@@ -405,4 +405,117 @@ class KasirController extends Controller
 
         return back()->with('success', 'Status pesanan diperbarui!');
     }
+    // =====================================================
+// TAMBAHKAN METHOD INI DI DALAM CLASS KasirController
+// Letakkan setelah method updatePesanan() paling bawah
+// =====================================================
+ 
+public function laporanDetail(Request $request)
+{
+    $rentang    = $request->get('rentang', 'hari');
+    $tanggal    = $request->get('tanggal', today()->toDateString());
+    $namaProduk = trim((string) $request->get('nama_produk', ''));
+
+    // Tentukan range tanggal berdasarkan rentang yang dipilih
+    $dari   = null;
+    $sampai = null;
+
+    switch ($rentang) {
+        case 'minggu':
+            $dari   = now()->startOfWeek()->toDateString();
+            $sampai = now()->endOfWeek()->toDateString();
+            break;
+        case 'bulan':
+            $dari   = now()->startOfMonth()->toDateString();
+            $sampai = now()->endOfMonth()->toDateString();
+            break;
+        case 'tahun':
+            $dari   = now()->startOfYear()->toDateString();
+            $sampai = now()->endOfYear()->toDateString();
+            break;
+        case 'semua':
+            // Tidak ada batasan tanggal sama sekali
+            $dari   = null;
+            $sampai = null;
+            break;
+        default: // hari
+            $dari   = $tanggal;
+            $sampai = $tanggal;
+            break;
+    }
+
+    // Ambil semua order dalam rentang yang dipilih (status selesai)
+    $ordersQuery = DB::table('orders')
+        ->whereIn('status', ['completed', 'success'])
+        ->orderBy('created_at');
+
+    if ($dari && $sampai) {
+        $ordersQuery->whereDate('created_at', '>=', $dari)
+                    ->whereDate('created_at', '<=', $sampai);
+    }
+
+    $orders   = $ordersQuery->get();
+    $orderIds = $orders->pluck('id');
+
+    // Ambil semua order_items dari order tersebut, filter nama produk jika diisi
+    $itemsQuery = DB::table('order_items')->whereIn('order_id', $orderIds);
+
+    if ($namaProduk !== '') {
+        $itemsQuery->where('product_name', 'like', '%' . $namaProduk . '%');
+    }
+
+    $allItems = $itemsQuery->get();
+
+    // Jika filter nama produk aktif, hanya order yang memuat produk tsb yang dihitung
+    if ($namaProduk !== '') {
+        $matchedOrderIds = $allItems->pluck('order_id')->unique();
+        $orders = $orders->whereIn('id', $matchedOrderIds);
+    }
+
+    // Kelompokkan berdasarkan tanggal
+    $grouped = $orders->groupBy(fn($o) => \Carbon\Carbon::parse($o->created_at)->toDateString());
+
+    $result = [];
+
+    foreach ($grouped as $tgl => $ordersPerHari) {
+        $orderIdsHari = $ordersPerHari->pluck('id');
+        $itemsHari    = $allItems->whereIn('order_id', $orderIdsHari);
+
+        // Hitung total produk terjual per nama produk
+        $produkSummary = $itemsHari->groupBy('product_name')->map(fn($items) => [
+            'nama'     => $items->first()->product_name,
+            'jumlah'   => $items->sum('quantity'),
+        ])->values();
+
+        // Daftar nama pembeli unik
+        $pembeli = $ordersPerHari
+            ->pluck('customer_name')
+            ->filter()
+            ->unique()
+            ->values();
+
+        // Omzet: kalau filter produk aktif, jumlahkan subtotal item yang cocok saja.
+        // Kalau tidak ada filter, gunakan total_price order (omzet keseluruhan order).
+        $omzet = $namaProduk !== ''
+            ? (int) $itemsHari->sum('subtotal')
+            : (int) $ordersPerHari->sum('total_price');
+
+        $result[] = [
+            'tanggal'        => \Carbon\Carbon::parse($tgl)->translatedFormat('l, d F Y'),
+            'total_terjual'  => $itemsHari->sum('quantity'),
+            'total_omzet'    => $omzet,
+            'total_order'    => $ordersPerHari->count(),
+            'produk'         => $produkSummary,
+            'pembeli'        => $pembeli,
+        ];
+    }
+
+    return response()->json([
+        'rentang'     => $rentang,
+        'nama_produk' => $namaProduk,
+        'dari'        => $dari,
+        'sampai'      => $sampai,
+        'data'        => $result,
+    ]);
+}
 }

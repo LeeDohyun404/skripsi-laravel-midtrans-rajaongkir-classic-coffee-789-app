@@ -302,4 +302,5 @@ Route::prefix('kasir')->name('kasir.')->middleware(['auth.karyawan', 'role.karya
     Route::post('/transaksi/store', [App\Http\Controllers\KasirController::class, 'storeTransaksi'])->name('transaksi.store');
     Route::post('/profil/nama', [ProfilController::class, 'gantiNama'])->name('profil.nama');
     Route::post('/profil/password', [ProfilController::class, 'ubahPassword'])->name('profil.password');
+    Route::get('/laporan-detail', [App\Http\Controllers\KasirController::class, 'laporanDetail'])->name('laporan.detail');
 });

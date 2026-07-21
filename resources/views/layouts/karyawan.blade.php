@@ -149,7 +149,7 @@
         }
 
         .btn-logout:hover {
-            background: rgba(192,57,43,0.15);
+            background: rgb(255, 255, 255);
             color: #e87c71;
             border-color: rgba(192,57,43,0.3);
         }

@@ -345,6 +345,29 @@
         color: var(--text-muted);
     }
 
+    /* ===== TAB TOGGLE ===== */
+    .tab-toggle-btn {
+        background: white;
+        border: 1.5px solid var(--cream-dark);
+        color: var(--text-muted);
+        padding: 10px 18px;
+        border-radius: 10px;
+        font-size: 13px;
+        font-weight: 600;
+        font-family: 'DM Sans', sans-serif;
+        cursor: pointer;
+        transition: all 0.15s;
+    }
+    .tab-toggle-btn:hover {
+        border-color: var(--gold);
+        color: var(--brown-mid);
+    }
+    .tab-toggle-btn.active {
+        background: var(--brown-mid);
+        border-color: var(--brown-mid);
+        color: var(--gold);
+    }
+
     /* Print style */
     @media print {
         body * { visibility: hidden; }
@@ -379,6 +402,16 @@
     </div>
 </div>
 
+<div style="display:flex; gap:10px; margin-bottom:16px;">
+    <button type="button" id="tabBtnTransaksi" class="tab-toggle-btn active" onclick="switchTab('transaksi')">
+        🧾 Transaksi Terbaru Hari Ini
+    </button>
+    <button type="button" id="tabBtnDetail" class="tab-toggle-btn" onclick="switchTab('detail')">
+        📦 Detail Penjualan Produk
+    </button>
+</div>
+
+<div id="tabTransaksi">
 <div class="card">
     <div class="card-header">
         <h2>Transaksi Terbaru Hari Ini</h2>
@@ -436,6 +469,39 @@
             </tbody>
         </table>
     </div>
+</div>
+</div>
+
+<div id="tabDetail" style="display:none;">
+<div class="card">
+    <div class="card-header" style="flex-wrap:wrap; gap:12px;">
+        <h2>📦 Detail Penjualan Produk</h2>
+        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+            <select
+                id="filterNamaProduk"
+                class="input-field"
+                style="width:200px; padding:8px 12px; font-size:13px;"
+            >
+                <option value="">🔍 Semua Produk</option>
+            </select>
+            <select id="selectRentang" class="input-field" style="width:auto; padding:8px 12px; font-size:13px;">
+                <option value="hari">Hari Ini</option>
+                <option value="minggu">Minggu Ini</option>
+                <option value="bulan">Bulan Ini</option>
+                <option value="tahun">Tahun Ini</option>
+                <option value="semua">Semua Waktu</option>
+            </select>
+            <button type="button" onclick="loadLaporanDetail()" class="btn btn-primary btn-sm">Tampilkan</button>
+        </div>
+    </div>
+    <div style="padding:20px 26px;">
+        <div id="laporanDetailContainer">
+            <p style="text-align:center; color:var(--text-muted); padding:24px 0; font-size:13px;">
+                Pilih filter lalu klik Tampilkan.
+            </p>
+        </div>
+    </div>
+</div>
 </div>
 
 {{-- =====================================================
@@ -582,6 +648,47 @@
 // STATE
 // ===============================================================
 let cart = {};
+
+// ===============================================================
+// ISI DROPDOWN FILTER NAMA PRODUK (dari PRODUK_DATA / database)
+// ===============================================================
+(function populateFilterNamaProduk() {
+    const select = document.getElementById('filterNamaProduk');
+    if (!select) return;
+
+    const produk = Array.isArray(PRODUK_DATA) ? PRODUK_DATA : [];
+    // Nama unik saja (jaga-jaga kalau ada produk dengan nama sama)
+    const namaUnik = [...new Set(produk.map(p => p.name).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'id'));
+
+    namaUnik.forEach(nama => {
+        const opt = document.createElement('option');
+        opt.value = nama;
+        opt.textContent = nama;
+        select.appendChild(opt);
+    });
+})();
+
+// ===============================================================
+// TAB TOGGLE (Transaksi Terbaru vs Detail Penjualan)
+// ===============================================================
+function switchTab(tab) {
+    const tabTransaksi = document.getElementById('tabTransaksi');
+    const tabDetail     = document.getElementById('tabDetail');
+    const btnTransaksi  = document.getElementById('tabBtnTransaksi');
+    const btnDetail     = document.getElementById('tabBtnDetail');
+
+    if (tab === 'detail') {
+        tabTransaksi.style.display = 'none';
+        tabDetail.style.display    = 'block';
+        btnTransaksi.classList.remove('active');
+        btnDetail.classList.add('active');
+    } else {
+        tabTransaksi.style.display = 'block';
+        tabDetail.style.display    = 'none';
+        btnDetail.classList.remove('active');
+        btnTransaksi.classList.add('active');
+    }
+}
 
 // ===============================================================
 // MODAL HELPERS
@@ -880,6 +987,69 @@ function tampilkanStruk(order, items, total) {
 
     document.getElementById('strukItems').innerHTML = itemsHtml;
     document.getElementById('modalStruk').classList.add('show');
+}
+</script>
+<script>
+function loadLaporanDetail() {
+    const rentang = document.getElementById('selectRentang').value;
+    const namaProduk = document.getElementById('filterNamaProduk').value.trim();
+    const container = document.getElementById('laporanDetailContainer');
+    container.innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:24px 0;font-size:13px;">Memuat data...</p>';
+
+    const params = new URLSearchParams({ rentang: rentang });
+    if (namaProduk) {
+        params.set('nama_produk', namaProduk);
+    }
+
+    fetch(`{{ route('kasir.laporan.detail') }}?${params.toString()}`)
+        .then(res => res.json())
+        .then(json => {
+            if (!json.data || json.data.length === 0) {
+                container.innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:24px 0;font-size:13px;">Tidak ada data untuk filter ini.</p>';
+                return;
+            }
+
+            const chip = (text, muted) => `<span style="display:inline-block;background:white;border:1px solid var(--cream-dark);color:${muted ? 'var(--text-muted)' : 'var(--text)'};padding:4px 10px;border-radius:20px;font-size:12px;margin:2px 4px 2px 0;">${text}</span>`;
+
+            let html = '';
+            json.data.forEach(item => {
+                // Buat list produk
+                const produkList = item.produk.map(p =>
+                    chip(`${p.nama} <strong>${p.jumlah}x</strong>`, false)
+                ).join('');
+
+                // Buat list pembeli
+                const pembeliList = item.pembeli.length > 0
+                    ? item.pembeli.map(n => chip(n, true)).join('')
+                    : '<span style="color:var(--text-muted);font-size:12px;">-</span>';
+
+                html += `
+                <div style="border:1px solid var(--cream-dark);border-radius:12px;padding:16px 18px;margin-bottom:12px;background:#fdf9f4;">
+                    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:10px;flex-wrap:wrap;">
+                        <strong style="color:var(--text);font-size:14px;">📅 ${item.tanggal}</strong>
+                        <span style="color:#2e7d32;font-weight:700;font-size:14px;white-space:nowrap;">Rp ${item.total_omzet.toLocaleString('id-ID')}</span>
+                    </div>
+                    <div style="margin-bottom:10px;font-size:13px;color:var(--text);">
+                        <span style="color:var(--text-muted);">Total produk terjual:</span>
+                        <strong>${item.total_terjual} buah</strong>
+                        <span style="color:var(--text-muted);margin-left:8px;">(${item.total_order} transaksi)</span>
+                    </div>
+                    <div style="margin-bottom:10px;">
+                        <small style="color:var(--text-muted);display:block;margin-bottom:6px;font-size:11px;letter-spacing:1px;text-transform:uppercase;">Jenis produk terjual</small>
+                        ${produkList}
+                    </div>
+                    <div>
+                        <small style="color:var(--text-muted);display:block;margin-bottom:6px;font-size:11px;letter-spacing:1px;text-transform:uppercase;">Nama pembeli</small>
+                        ${pembeliList}
+                    </div>
+                </div>`;
+            });
+
+            container.innerHTML = html;
+        })
+        .catch(() => {
+            container.innerHTML = '<p style="text-align:center;color:#c0392b;padding:24px 0;font-size:13px;">Gagal memuat data. Silakan coba lagi.</p>';
+        });
 }
 </script>
 @endpush
