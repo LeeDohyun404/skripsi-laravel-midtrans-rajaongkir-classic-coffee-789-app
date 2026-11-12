@@ -39,7 +39,7 @@
             <div class="group bg-white rounded-[2.5rem] p-4 shadow-sm hover:shadow-2xl transition-all duration-500 border border-stone-100 flex flex-col h-full {{ $stokHabis ? 'opacity-75' : '' }}">
 
                 <div class="relative aspect-square overflow-hidden rounded-[2rem] mb-6">
-                    <img src="{{ asset('images/'.$p->image_url) }}"
+                    <img src="{{ url('/foto-produk') . '?f=' . $p->image_url }}"
                          alt="{{ $p->name }}"
                          class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 {{ $stokHabis ? 'grayscale' : '' }}"
                          onerror="this.src='https://placehold.co/400x400?text=Kopi+Enak'">

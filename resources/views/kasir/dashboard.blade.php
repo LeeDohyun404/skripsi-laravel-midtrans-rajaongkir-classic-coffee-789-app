@@ -742,7 +742,7 @@ function cariProduk(query) {
             // Tombol + untuk tambah langsung dari dropdown
             div.innerHTML = `
                 ${image
-                    ? `<img src="/images/${escapeHtml(image)}" alt="${escapeHtml(nama)}">`
+                    ? `<img src="/foto-produk/${escapeHtml(image)}" alt="${escapeHtml(nama)}">`
                     : `<div class="opt-fallback">☕</div>`
                 }
                 <div style="flex:1;">
@@ -826,7 +826,7 @@ function renderCart() {
     list.innerHTML = items.map(item => {
         const subtotal = item.price * item.qty;
         const imgTag = item.image
-            ? `<img src="/images/${item.image}" class="cart-item-img" alt="${item.name}">`
+            ? `<img src="/foto-produk/${item.image}" class="cart-item-img" alt="${item.name}">`
             : `<div class="cart-item-fallback">☕</div>`;
         return `
             <div class="cart-item">

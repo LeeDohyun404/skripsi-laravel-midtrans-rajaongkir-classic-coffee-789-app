@@ -12,6 +12,7 @@ use App\Models\Voucher;
 use App\Models\Order;
 use App\Models\OrderTracking;
 use App\Services\CoffeeBeanService;
+use App\Services\PaymentSyncService;
 use Midtrans\Config;
 use Midtrans\Snap;
 
@@ -19,8 +20,8 @@ class OrderController extends Controller
 {
     public function checkout(Request $request)
     {
-        Config::$serverKey    = env('MIDTRANS_SERVER_KEY');
-        Config::$isProduction = false;
+        Config::$serverKey    = config('services.midtrans.serverKey');
+        Config::$isProduction = config('services.midtrans.isProduction');
         Config::$isSanitized  = true;
         Config::$is3ds        = true;
 
@@ -161,11 +162,11 @@ class OrderController extends Controller
                 'gross_amount' => $total,
             ],
             'item_details'     => $itemDetails,
-            'notification_url' => env('APP_URL') . '/api/midtrans-callback',
+            'notification_url' => url('/api/midtrans-callback'),
             'callbacks'        => [
-                'finish' => env('APP_URL') . '/orders/' . $orderId . '/struk',
-                'error'  => env('APP_URL') . '/checkout_page?error=payment_failed',
-                'pending'=> env('APP_URL') . '/orders/' . $orderId . '/struk',
+                'finish' => url('/orders/' . $orderId . '/struk'),
+                'error'  => url('/checkout_page?error=payment_failed'),
+                'pending'=> url('/orders/' . $orderId . '/struk'),
             ],
             'customer_details' => [
                 'first_name' => Auth::user()->name,
@@ -220,7 +221,7 @@ class OrderController extends Controller
      */
     public function notificationHandler(Request $request)
     {
-        $payload  = json_decode($request->getContent(), true);
+        $payload  = json_decode($request->getContent(), true) ?: [];
         $order_id = $payload['order_id'] ?? null;
         $status   = $payload['transaction_status'] ?? null;
 
@@ -230,41 +231,21 @@ class OrderController extends Controller
             return response()->json(['message' => 'Invalid payload'], 400);
         }
 
-        if (in_array($status, ['settlement', 'capture'])) {
+        // Verifikasi signature supaya callback palsu tidak bisa melunasi order
+        $expected = hash('sha512',
+            ($payload['order_id'] ?? '') .
+            ($payload['status_code'] ?? '') .
+            ($payload['gross_amount'] ?? '') .
+            config('services.midtrans.serverKey')
+        );
+        if (!hash_equals($expected, (string) ($payload['signature_key'] ?? ''))) {
+            Log::warning('Midtrans signature tidak cocok', ['order_id' => $order_id]);
+            return response()->json(['message' => 'Invalid signature'], 403);
+        }
 
-            DB::table('orders')
-                ->where('number', $order_id)
-                ->update(['status' => 'success', 'updated_at' => now()]);
-
-            $order = DB::table('orders')->where('number', $order_id)->first();
-
-            if ($order) {
-                $orderModel = Order::find($order->id);
-                if ($orderModel) {
-                    if ($orderModel->used_voucher && $orderModel->voucher_id) {
-                        $voucher = Voucher::find($orderModel->voucher_id);
-                        if ($voucher) {
-                            CoffeeBeanService::markVoucherUsed($orderModel, $voucher);
-                        }
-                        CoffeeBeanService::processOrder($orderModel);
-                    } else {
-                        CoffeeBeanService::processOrder($orderModel);
-                    }
-                }
-
-                $this->sendNotifications(
-                    $order->number,
-                    $order->customer_name,
-                    $order->total_price,
-                    $order->order_type,
-                    $order->customer_phone
-                );
-            }
-
-        } elseif (in_array($status, ['cancel', 'deny', 'expire'])) {
-            DB::table('orders')
-                ->where('number', $order_id)
-                ->update(['status' => 'cancelled', 'updated_at' => now()]);
+        $order = Order::where('number', $order_id)->first();
+        if ($order) {
+            PaymentSyncService::apply($order, $status, $payload['fraud_status'] ?? null);
         }
 
         return response()->json(['status' => 'OK']);
@@ -334,6 +315,14 @@ class OrderController extends Controller
             abort(404, 'Order tidak ditemukan.');
         }
 
+        // Jaga-jaga kalau callback Midtrans belum masuk: tanya status langsung ke Midtrans
+        if ($order->status === 'pending' && !$order->used_voucher) {
+            $orderModel = Order::find($orderId);
+            if ($orderModel && PaymentSyncService::syncFromMidtrans($orderModel)) {
+                $order = DB::table('orders')->where('id', $orderId)->first();
+            }
+        }
+
         $items        = DB::table('order_items')->where('order_id', $orderId)->get();
         $nomorAntrian = str_pad($order->id % 100, 2, '0', STR_PAD_LEFT);
 
@@ -357,8 +346,8 @@ class OrderController extends Controller
             return response()->json(['error' => 'Order tidak ditemukan atau sudah tidak pending.'], 404);
         }
 
-        Config::$serverKey    = env('MIDTRANS_SERVER_KEY');
-        Config::$isProduction = false;
+        Config::$serverKey    = config('services.midtrans.serverKey');
+        Config::$isProduction = config('services.midtrans.isProduction');
         Config::$isSanitized  = true;
         Config::$is3ds        = true;
 
@@ -388,7 +377,7 @@ class OrderController extends Controller
                 'gross_amount' => (int) $order->total_price,
             ],
             'item_details'     => $itemDetails,
-            'notification_url' => env('APP_URL') . '/api/midtrans-callback',
+            'notification_url' => url('/api/midtrans-callback'),
             'customer_details' => [
                 'first_name' => $order->customer_name,
                 'email'      => $order->customer_email,

@@ -27,7 +27,7 @@
                             @php $total += $details['price'] * $details['quantity'] @endphp
                             <tr>
                                 <td class="px-6 py-4 flex items-center gap-4">
-                                    <img src="{{ asset('images/'.$details['image']) }}" class="w-16 h-16 rounded-xl object-cover border">
+                                    <img src="{{ url('/foto-produk') . '?f=' . $details['image'] }}" class="w-16 h-16 rounded-xl object-cover border">
                                     <div>
                                         <p class="font-bold text-stone-800">{{ $details['name'] }}</p>
                                         <p class="text-xs text-amber-700">Rp {{ number_format($details['price']) }}</p>

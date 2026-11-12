@@ -275,7 +275,7 @@
                             <div class="flex items-center justify-between py-2">
                                 <div class="flex items-center gap-3">
                                     @if(isset($item['image']) && $item['image'])
-                                        <img src="{{ asset('images/'.$item['image']) }}" class="w-12 h-12 rounded-xl object-cover" alt="{{ $item['name'] }}">
+                                        <img src="{{ url('/foto-produk') . '?f=' . $item['image'] }}" class="w-12 h-12 rounded-xl object-cover" alt="{{ $item['name'] }}">
                                     @else
                                         <div class="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center text-xl">☕</div>
                                     @endif

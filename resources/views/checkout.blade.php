@@ -29,7 +29,7 @@
                 window.location.href = '/orders/{{ $orderId }}/struk';
             },
             onPending: function(result){
-                alert("Menunggu pembayaran Anda...");
+                window.location.href = "/orders/{{ $orderId }}/struk";
             },
             onError: function(result){
                 alert("Waduh, pembayaran gagal! Silakan coba lagi.");

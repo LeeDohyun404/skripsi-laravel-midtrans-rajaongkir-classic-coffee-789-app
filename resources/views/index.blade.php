@@ -37,7 +37,7 @@
 
         <div class="group bg-white rounded-[2rem] p-4 shadow-sm hover:shadow-2xl transition-all duration-500 border border-stone-100 {{ $stokHabis ? 'opacity-75' : '' }}">
             <div class="relative overflow-hidden rounded-[1.5rem] aspect-square mb-6">
-                <img src="{{ asset('images/' . $product->image_url) }}"
+                <img src="{{ url('/foto-produk') . '?f=' . $product->image_url }}"
                      class="w-full h-full object-cover group-hover:scale-110 transition duration-700 {{ $stokHabis ? 'grayscale' : '' }}">
 
                 @if($product->discount_percentage > 0)

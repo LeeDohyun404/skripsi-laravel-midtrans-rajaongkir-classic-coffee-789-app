@@ -10,11 +10,11 @@ class AdminAuth
 {
     public function handle(Request $request, Closure $next)
     {
-        // 1. Cek apakah ada orang yang login di pintu 'staff'
-        if (Auth::guard('staff')->check()) {
-            
+        // 1. Cek apakah ada orang yang login di guard 'karyawan'
+        if (Auth::guard('karyawan')->check()) {
+
             // 2. Ambil data orangnya
-            $user = Auth::guard('staff')->user();
+            $user = Auth::guard('karyawan')->user();
 
             // 3. Cek apakah jabatannya 'admin'
             if ($user->peran === 'admin') {

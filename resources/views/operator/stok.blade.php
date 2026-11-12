@@ -509,7 +509,7 @@
                             <td>
                                 <div class="product-cell">
                                     @if($p->image_url)
-                                        <img src="{{ asset('images/'.$p->image_url) }}" alt="{{ $p->name }}" class="product-thumb">
+                                        <img src="{{ url('/foto-produk') . '?f=' . $p->image_url }}" alt="{{ $p->name }}" class="product-thumb">
                                     @else
                                         <div class="product-fallback">📦</div>
                                     @endif
@@ -634,7 +634,7 @@
 
     <div class="modal-panel" id="modalEditProduk">
         <div class="modal-card">
-            <form method="POST" action="{{ route('operator.produk.update') }}">
+            <form method="POST" action="{{ route('operator.produk.update') }}" enctype="multipart/form-data">
                 @csrf
                 @method('PUT')
                 <input type="hidden" name="id" id="editProdukId">
@@ -658,6 +658,10 @@
                         <div>
                             <label class="field-label">Kategori</label>
                             <input type="text" name="category" id="editKategori" class="form-control-modern">
+                        </div>
+                        <div>
+                            <label class="field-label">Ganti Foto (opsional)</label>
+                            <input type="file" name="image" class="form-file-modern" accept="image/*">
                         </div>
                     </div>
                 </div>

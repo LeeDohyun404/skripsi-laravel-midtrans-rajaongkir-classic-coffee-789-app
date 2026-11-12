@@ -1212,7 +1212,7 @@
                                     <td>
                                         <div class="product-inline">
                                             ${item.product_image
-                                                ? `<img src="/images/${item.product_image}" class="product-thumb" alt="${item.product_name}">`
+                                                ? `<img src="/foto-produk/${item.product_image}" class="product-thumb" alt="${item.product_name}">`
                                                 : `<div class="product-fallback">☕</div>`
                                             }
                                             <span style="font-weight:600;">${item.product_name}</span>
@@ -1339,7 +1339,7 @@
                     let rows = '';
                     data.items.forEach(item => {
                         const thumb = item.product_image
-                            ? `<img src="/images/${item.product_image}" class="product-thumb" alt="${item.product_name}">`
+                            ? `<img src="/foto-produk/${item.product_image}" class="product-thumb" alt="${item.product_name}">`
                             : `<div class="product-fallback">☕</div>`;
  
                         rows += `<tr>

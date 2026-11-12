@@ -2,25 +2,16 @@
 
 return [
 
-    /*
-    |--------------------------------------------------------------------------
-    | Authentication Defaults
-    |--------------------------------------------------------------------------
-    */
-
     'defaults' => [
         'guard' => 'web',
         'passwords' => 'users',
     ],
 
     /*
-    |--------------------------------------------------------------------------
-    | Authentication Guards
-    |--------------------------------------------------------------------------
     | web       → pelanggan (tabel users)
     | karyawan  → semua staff (admin, operator, kasir) — tabel karyawan
+    | staff     → ALIAS sementara untuk karyawan (hapus setelah semua kode diganti)
     */
-
     'guards' => [
         'web' => [
             'driver' => 'session',
@@ -31,13 +22,12 @@ return [
             'driver' => 'session',
             'provider' => 'karyawan',
         ],
-    ],
 
-    /*
-    |--------------------------------------------------------------------------
-    | User Providers
-    |--------------------------------------------------------------------------
-    */
+        'staff' => [
+            'driver' => 'session',
+            'provider' => 'karyawan',
+        ],
+    ],
 
     'providers' => [
         'users' => [
@@ -51,12 +41,6 @@ return [
         ],
     ],
 
-    /*
-    |--------------------------------------------------------------------------
-    | Resetting Passwords
-    |--------------------------------------------------------------------------
-    */
-
     'passwords' => [
         'users' => [
             'provider' => 'users',
@@ -68,16 +52,10 @@ return [
         'karyawan' => [
             'provider' => 'karyawan',
             'table' => 'password_reset_tokens',
-            'expire' => 60,  // token expired dalam 60 menit
-            'throttle' => 60, // minimal 60 detik antar request
+            'expire' => 60,
+            'throttle' => 60,
         ],
     ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Password Confirmation Timeout
-    |--------------------------------------------------------------------------
-    */
 
     'password_timeout' => 10800,
 

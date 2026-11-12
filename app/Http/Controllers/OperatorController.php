@@ -59,7 +59,7 @@ class OperatorController extends Controller
             };
         }
 
-        $products     = $query->paginate(10);
+        $products     = $query->paginate(50);
         $kategoriList = DB::table('products')->distinct()->pluck('category')->filter();
 
         $totalProduk = DB::table('products')->count();
@@ -84,9 +84,7 @@ class OperatorController extends Controller
 
         $image = 'default.jpg';
         if ($request->hasFile('image')) {
-            $img   = $request->file('image');
-            $image = time() . '.' . $img->getClientOriginalExtension();
-            $img->move(public_path('images'), $image);
+            $image = ProductImageController::simpan($request->file('image'));
         }
 
         DB::table('products')->insert([
@@ -108,14 +106,21 @@ class OperatorController extends Controller
             'id'    => 'required',
             'name'  => 'required',
             'price' => 'required|numeric',
+            'image' => 'nullable|image|max:2048',
         ]);
 
-        DB::table('products')->where('id', $request->id)->update([
+        $data = [
             'name'       => $request->name,
             'price'      => $request->price,
             'category'   => $request->category,
             'updated_at' => now(),
-        ]);
+        ];
+
+        if ($request->hasFile('image')) {
+            $data['image_url'] = ProductImageController::simpan($request->file('image'));
+        }
+
+        DB::table('products')->where('id', $request->id)->update($data);
 
         return back()->with('success', 'Produk berhasil diperbarui!');
     }

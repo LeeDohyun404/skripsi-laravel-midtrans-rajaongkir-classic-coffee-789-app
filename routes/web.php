@@ -19,12 +19,17 @@ use App\Http\Controllers\StaffPasswordController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\VoucherController;
 use App\Http\Controllers\ComplaintController;
+use App\Http\Controllers\ProductImageController;
 
 // =============================================
 // ✅ API RAJAONGKIR — WAJIB PALING ATAS
 // =============================================
 Route::get('/api/search-destination', [RajaOngkirController::class, 'searchDestination']);
 Route::post('/api/ongkir', [RajaOngkirController::class, 'getCost']);
+
+// Gambar produk: fallback ke database kalau file tidak ada di disk
+Route::get('/images/{filename}', [ProductImageController::class, 'show'])->where('filename', '[A-Za-z0-9._-]+');
+Route::get('/foto-produk', [ProductImageController::class, 'showQuery']);
 
 // =============================================
 // HALAMAN UTAMA

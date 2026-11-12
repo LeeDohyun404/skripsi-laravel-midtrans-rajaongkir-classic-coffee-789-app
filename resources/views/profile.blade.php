@@ -257,7 +257,7 @@
                         @foreach($order->items as $item)
                         <div class="flex items-center gap-2">
                             @if($item->product_image)
-                                <img src="{{ asset('images/'.$item->product_image) }}" class="w-8 h-8 rounded-xl object-cover border border-stone-100">
+                                <img src="{{ url('/foto-produk') . '?f=' . $item->product_image }}" class="w-8 h-8 rounded-xl object-cover border border-stone-100">
                             @else
                                 <div class="w-8 h-8 rounded-xl bg-amber-50 flex items-center justify-center">
                                     <i class="fas fa-coffee text-amber-400 text-xs"></i>
@@ -825,7 +825,7 @@
 </div>
 </div>
 
-<script src="https://app.sandbox.midtrans.com/snap/snap.js" data-client-key="{{ env('MIDTRANS_CLIENT_KEY') }}"></script>
+<script src="https://app.sandbox.midtrans.com/snap/snap.js" data-client-key="{{ config('services.midtrans.clientKey') }}"></script>
 
 <script>
 function showTab(tab) {

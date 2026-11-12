@@ -9,12 +9,16 @@
 --}}
 
 {{-- ===== SCRIPT BUKA/TUTUP MODAL ===== --}}
+@php
+    $tabAwal = session("modal_tab")
+        ?? ($errors->has("password_lama") || $errors->has("password_baru") ? "password" : "nama");
+@endphp
 <script>
 function bukaModalProfil(tab = 'nama') {
     const modal = document.getElementById('modal-profil');
     if (modal) {
         modal.classList.remove('hidden');
-        switchTabProfil(tab || '{{ session("modal_tab", "nama") }}');
+        switchTabProfil(tab || '{{ $tabAwal }}');
     }
 }
 
@@ -51,7 +55,7 @@ function switchTabProfil(tab) {
 // ✅ Buka modal otomatis jika ada error atau success
 @if(session('profil_sukses') || $errors->any())
     document.addEventListener('DOMContentLoaded', function () {
-        bukaModalProfil('{{ session("modal_tab", "nama") }}');
+        bukaModalProfil('{{ $tabAwal }}');
     });
 @endif
 </script>

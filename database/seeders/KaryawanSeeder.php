@@ -44,7 +44,9 @@ class KaryawanSeeder extends Seeder
         ];
 
         foreach ($data as $row) {
-            Karyawan::updateOrCreate(
+            // firstOrCreate: akun yang sudah ada TIDAK ditimpa,
+            // jadi password yang sudah diganti tidak kembali ke default.
+            Karyawan::withTrashed()->firstOrCreate(
                 ['username' => $row['username']],
                 $row
             );
