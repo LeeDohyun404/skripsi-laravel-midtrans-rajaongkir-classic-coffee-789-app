@@ -829,9 +829,15 @@
                 {{-- Upload Foto Bukti --}}
                 <div class="mb-6">
                     <label class="block text-xs font-bold uppercase tracking-widest text-stone-400 mb-2">Foto Bukti *</label>
-                    <input type="file" name="foto" accept="image/*" required
-                        class="w-full border border-stone-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-amber-400 transition">
-                    <p class="text-xs text-stone-400 mt-1">Format: JPG, PNG, WEBP. Maks 2MB.</p>
+                    <input type="file" name="foto" id="complaintFotoInput" accept="image/*" required
+                        class="w-full border border-stone-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-amber-400 transition"
+                        onchange="compressComplaintPhoto(this)">
+                    <input type="hidden" name="foto_base64" id="complaintFotoBase64">
+                    <div id="complaintFotoPreviewBox" style="display:none;" class="mt-3">
+                        <img id="complaintFotoPreview" src="" class="w-32 h-32 object-cover rounded-xl border border-stone-200">
+                        <span class="text-xs text-emerald-600 font-semibold block mt-1">✓ Foto siap diunggah (terkompresi otomatis)</span>
+                    </div>
+                    <p class="text-xs text-stone-400 mt-1">Format: JPG, PNG, WEBP. Maks 8MB (otomatis dikompresi).</p>
                     @error('foto')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
                 </div>
 
@@ -965,6 +971,38 @@ function compressAndSubmitAvatar(input, formId) {
                 if (fname) fname.textContent = 'Klik untuk upload foto';
                 alert('Koneksi gagal, coba lagi.');
             });
+        };
+        img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+
+function compressComplaintPhoto(input) {
+    if (!input.files || !input.files[0]) return;
+    const file = input.files[0];
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+            const MAX = 1200;
+            let w = img.width, h = img.height;
+            if (w > MAX || h > MAX) {
+                if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
+                else       { w = Math.round(w * MAX / h); h = MAX; }
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = w; canvas.height = h;
+            canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+            const base64  = dataUrl.split(',')[1];
+            const hidden = document.getElementById('complaintFotoBase64');
+            if (hidden) hidden.value = base64;
+            const previewBox = document.getElementById('complaintFotoPreviewBox');
+            const previewImg = document.getElementById('complaintFotoPreview');
+            if (previewBox && previewImg) {
+                previewImg.src = dataUrl;
+                previewBox.style.display = 'block';
+            }
         };
         img.src = e.target.result;
     };

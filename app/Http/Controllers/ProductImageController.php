@@ -68,9 +68,8 @@ class ProductImageController extends Controller
     {
         $filename = basename($rawFilename);
 
-        // Fallback file pengaduan lama yang sempat terhapus saat deploy
-        if ($filename === 'RGiHx4g59CvFDe4cZarvl6K9KUBt8XkFivX3v3tY.jpg' || empty($filename)) {
-            $filename = 'wdttruPf7SR91Q7b6W0CUDQNlEmEazqaLjsqJ3b1.jpg';
+        if (empty($filename)) {
+            abort(404);
         }
 
         // 1. Cek disk public/images
@@ -128,12 +127,17 @@ class ProductImageController extends Controller
             // DB error — fall through to fallback
         }
 
-        // Fallback default jika gambar bukti pengaduan tidak ditemukan
-        $defaultProof = public_path('images/complaints/wdttruPf7SR91Q7b6W0CUDQNlEmEazqaLjsqJ3b1.jpg');
-        if (is_file($defaultProof)) {
-            return response()->file($defaultProof);
-        }
-
-        abort(404);
+        // Jika gambar tidak ditemukan (misal file lama yang sempat hilang di Wasmer),
+        // kembalikan SVG placeholder resmi yang bersih (bukan gambar acak/anime).
+        $svg = '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="260" viewBox="0 0 400 260">
+            <rect width="400" height="260" rx="12" fill="#f8fafc" stroke="#e2e8f0" stroke-width="2"/>
+            <text x="50%" y="42%" dominant-baseline="middle" text-anchor="middle" font-size="34">📷</text>
+            <text x="50%" y="60%" dominant-baseline="middle" text-anchor="middle" font-family="-apple-system, sans-serif" font-size="13" font-weight="700" fill="#475569">Foto Bukti Tidak Tersedia</text>
+            <text x="50%" y="72%" dominant-baseline="middle" text-anchor="middle" font-family="-apple-system, sans-serif" font-size="11" fill="#94a3b8">File arsip server sebelumnya hilang</text>
+        </svg>';
+        return response($svg, 200, [
+            'Content-Type'  => 'image/svg+xml',
+            'Cache-Control' => 'no-cache, private',
+        ]);
     }
 }

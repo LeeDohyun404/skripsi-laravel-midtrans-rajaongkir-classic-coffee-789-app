@@ -59,11 +59,6 @@ class OrderComplaint extends Model
             }
         }
 
-        // Fallback khusus untuk data komplain lama saat container ephemeral Wasmer restart
-        if ($filename === 'RGiHx4g59CvFDe4cZarvl6K9KUBt8XkFivX3v3tY.jpg') {
-            $filename = 'wdttruPf7SR91Q7b6W0CUDQNlEmEazqaLjsqJ3b1.jpg';
-        }
-
         if (empty($filename)) {
             return $value;
         }
