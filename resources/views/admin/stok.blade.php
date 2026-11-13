@@ -1,23 +1,26 @@
 @extends('layouts.karyawan')
 
-@section('title', 'Dashboard Operator')
-@section('page-title', 'Manajemen Stok')
+@section('title', 'Manajemen Stok - Admin')
+@section('page-title', 'Stok Produk')
 
 @section('sidebar-nav')
     <span class="nav-section-label">Menu Utama</span>
-    <a href="{{ route('operator.dashboard') }}" class="nav-item {{ request()->routeIs('operator.dashboard') ? 'active' : '' }}">
+    <a href="{{ route('admin.dashboard') }}" class="nav-item {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">
         <span class="nav-icon">🏠</span> Dashboard
     </a>
-    <span class="nav-section-label">Inventori</span>
-    <a href="{{ route('operator.stok') }}" class="nav-item {{ request()->routeIs('operator.stok') ? 'active' : '' }}">
-        <span class="nav-icon">📦</span> Manajemen Stok
+
+    <span class="nav-section-label">Manajemen</span>
+    <a href="{{ route('admin.karyawan.index') }}" class="nav-item {{ request()->routeIs('admin.karyawan.*') ? 'active' : '' }}">
+        <span class="nav-icon">👥</span> Karyawan
     </a>
-    <span class="nav-section-label">Pengiriman</span>
-    <a href="{{ route('operator.tracking') }}" class="nav-item {{ request()->routeIs('operator.tracking') ? 'active' : '' }}">
-        <span class="nav-icon">🚚</span> Tracking Pesanan
+    <a href="{{ route('admin.pelanggan') }}" class="nav-item {{ request()->routeIs('admin.pelanggan') ? 'active' : '' }}">
+        <span class="nav-icon">🧑‍🤝‍🧑</span> Pelanggan
     </a>
-    <a href="{{ route('operator.pengaduan') }}" class="nav-item {{ request()->routeIs('operator.pengaduan*') ? 'active' : '' }}">
-        <span class="nav-icon">📋</span> Kelola Pengaduan
+    <a href="{{ route('admin.stok') }}" class="nav-item {{ request()->routeIs('admin.stok') ? 'active' : '' }}">
+        <span class="nav-icon">📦</span> Stok
+    </a>
+    <a href="{{ route('admin.history') }}" class="nav-item {{ request()->routeIs('admin.history') ? 'active' : '' }}">
+        <span class="nav-icon">📋</span> History Transaksi
     </a>
 @endsection
 
