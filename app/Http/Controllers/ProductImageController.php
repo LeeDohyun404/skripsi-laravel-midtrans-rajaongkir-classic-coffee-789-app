@@ -55,6 +55,11 @@ class ProductImageController extends Controller
             return response()->file($path);
         }
 
+        $avatarPath = storage_path('app/public/avatars/' . $filename);
+        if (is_file($avatarPath)) {
+            return response()->file($avatarPath);
+        }
+
         if (Schema::hasTable('product_images')) {
             $img = DB::table('product_images')->where('filename', $filename)->first();
             if ($img) {

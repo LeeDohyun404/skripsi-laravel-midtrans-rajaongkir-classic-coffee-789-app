@@ -109,17 +109,22 @@ class ProfileController extends Controller
      */
     public function updateAvatar(Request $request)
     {
-        $request->validate(['avatar' => 'required|image|mimes:jpg,jpeg,png,gif|max:2048']);
+        $request->validate(['avatar' => 'required|image|mimes:jpg,jpeg,png,gif,webp|max:2048']);
 
         $user = Auth::user();
+        $file = $request->file('avatar');
 
-        // Hapus avatar lama jika bukan dari Google
-        if ($user->avatar && ! str_starts_with($user->avatar, 'http')) {
-            Storage::disk('public')->delete($user->avatar);
-        }
+        // Simpan ke database via ProductImageController agar gambar persisten dan tidak hilang saat deploy
+        $filename = ProductImageController::simpan($file);
 
-        $path = $request->file('avatar')->store('avatars', 'public');
-        $user->update(['avatar' => Storage::url($path)]);
+        // Simpan salinan ke storage disk jika memungkinkan
+        try {
+            $file->storeAs('avatars', $filename, 'public');
+        } catch (\Throwable $e) {}
+
+        // Set URL avatar
+        $avatarUrl = url('/foto-avatar/' . $filename);
+        $user->update(['avatar' => $avatarUrl]);
 
         return back()->with('success', 'Foto profil berhasil diperbarui.');
     }

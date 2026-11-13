@@ -30,6 +30,8 @@ Route::post('/api/ongkir', [RajaOngkirController::class, 'getCost']);
 // Gambar produk: fallback ke database kalau file tidak ada di disk
 Route::get('/images/{filename}', [ProductImageController::class, 'show'])->where('filename', '[A-Za-z0-9._-]+');
 Route::get('/foto-produk', [ProductImageController::class, 'showQuery']);
+Route::get('/storage/avatars/{filename}', [ProductImageController::class, 'show'])->where('filename', '[A-Za-z0-9._-]+');
+Route::get('/foto-avatar/{filename}', [ProductImageController::class, 'show'])->where('filename', '[A-Za-z0-9._-]+');
 
 // =============================================
 // HALAMAN UTAMA

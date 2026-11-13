@@ -66,7 +66,11 @@
         <div class="relative group shrink-0">
             <div class="w-24 h-24 rounded-full overflow-hidden border-4 border-amber-100 shadow">
                 @if(Auth::user()->avatar)
-                    <img src="{{ Auth::user()->avatar }}" class="w-full h-full object-cover">
+                    <img src="{{ Auth::user()->avatar }}" class="w-full h-full object-cover"
+                         onerror="this.style.display='none'; document.getElementById('avatar-fallback-top').style.display='flex';">
+                    <div id="avatar-fallback-top" style="display:none;" class="w-full h-full bg-gradient-to-br from-amber-400 to-amber-700 items-center justify-center">
+                        <span class="text-white text-3xl font-bold font-serif">{{ strtoupper(substr(Auth::user()->name,0,1)) }}</span>
+                    </div>
                 @else
                     <div class="w-full h-full bg-gradient-to-br from-amber-400 to-amber-700 flex items-center justify-center">
                         <span class="text-white text-3xl font-bold font-serif">{{ strtoupper(substr(Auth::user()->name,0,1)) }}</span>
@@ -697,7 +701,11 @@
                 <div class="flex flex-col sm:flex-row items-center gap-6">
                     <div class="w-20 h-20 rounded-2xl overflow-hidden border-2 border-stone-100 shadow-sm shrink-0">
                         @if(Auth::user()->avatar)
-                            <img src="{{ Auth::user()->avatar }}" id="avatarPreview2" class="w-full h-full object-cover">
+                            <img src="{{ Auth::user()->avatar }}" id="avatarPreview2" class="w-full h-full object-cover"
+                                 onerror="this.style.display='none'; document.getElementById('avatar-fallback-edit').style.display='flex';">
+                            <div id="avatar-fallback-edit" style="display:none;" class="w-full h-full bg-gradient-to-br from-amber-400 to-amber-700 items-center justify-center">
+                                <span class="text-white text-2xl font-bold">{{ strtoupper(substr(Auth::user()->name,0,1)) }}</span>
+                            </div>
                         @else
                             <div class="w-full h-full bg-gradient-to-br from-amber-400 to-amber-700 flex items-center justify-center">
                                 <span class="text-white text-2xl font-bold">{{ strtoupper(substr(Auth::user()->name,0,1)) }}</span>

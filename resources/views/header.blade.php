@@ -163,7 +163,11 @@
 
                     <a href="{{ route('profile') }}" class="flex items-center gap-2 hover:text-amber-600 transition text-stone-600">
                         @if(Auth::user()->avatar)
-                            <img src="{{ Auth::user()->avatar }}" class="w-8 h-8 rounded-full object-cover border-2 border-amber-200">
+                            <img src="{{ Auth::user()->avatar }}" class="w-8 h-8 rounded-full object-cover border-2 border-amber-200"
+                                 onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                            <div style="display:none;" class="w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-amber-700 items-center justify-center">
+                                <span class="text-white text-xs font-bold">{{ strtoupper(substr(Auth::user()->name, 0, 1)) }}</span>
+                            </div>
                         @else
                             <div class="w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-amber-700 flex items-center justify-center">
                                 <span class="text-white text-xs font-bold">{{ strtoupper(substr(Auth::user()->name, 0, 1)) }}</span>
@@ -237,7 +241,11 @@
                     <div class="flex items-center justify-between px-1">
                         <a href="{{ route('profile') }}" class="flex items-center gap-2">
                             @if(Auth::user()->avatar)
-                                <img src="{{ Auth::user()->avatar }}" class="w-9 h-9 rounded-full object-cover border-2 border-amber-200">
+                                <img src="{{ Auth::user()->avatar }}" class="w-9 h-9 rounded-full object-cover border-2 border-amber-200"
+                                     onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                <div style="display:none;" class="w-9 h-9 rounded-full bg-gradient-to-br from-amber-400 to-amber-700 items-center justify-center">
+                                    <span class="text-white text-sm font-bold">{{ strtoupper(substr(Auth::user()->name, 0, 1)) }}</span>
+                                </div>
                             @else
                                 <div class="w-9 h-9 rounded-full bg-gradient-to-br from-amber-400 to-amber-700 flex items-center justify-center">
                                     <span class="text-white text-sm font-bold">{{ strtoupper(substr(Auth::user()->name, 0, 1)) }}</span>
