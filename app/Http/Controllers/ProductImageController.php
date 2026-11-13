@@ -76,7 +76,13 @@ class ProductImageController extends Controller
             return response()->file($avatarPath);
         }
 
-        // 3. Ambil dari DB — langsung query tanpa Schema::hasTable (lebih andal di Wasmer WASM)
+        // 3. Cek storage complaints
+        $complaintPath = storage_path('app/public/complaints/' . $filename);
+        if (is_file($complaintPath)) {
+            return response()->file($complaintPath);
+        }
+
+        // 4. Ambil dari DB — langsung query tanpa Schema::hasTable (lebih andal di Wasmer WASM)
         try {
             $img = DB::table('product_images')
                 ->where('filename', $filename)

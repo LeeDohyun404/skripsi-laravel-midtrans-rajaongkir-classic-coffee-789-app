@@ -33,4 +33,24 @@ class OrderComplaint extends Model
     public static function getStatus(string $status): array {
         return static::$statusConfig[$status] ?? ['label' => $status, 'color' => '#666', 'bg' => '#f3f4f6'];
     }
+
+    /**
+     * Accessor untuk foto bukti:
+     * Menggunakan endpoint tanpa ekstensi di path (?f=filename.jpg)
+     * agar TIDAK dicegat oleh server statis Wasmer WebAssembly.
+     */
+    public function getFotoUrlAttribute(): ?string
+    {
+        if (empty($this->foto)) {
+            return null;
+        }
+
+        if (str_starts_with($this->foto, 'http://') || str_starts_with($this->foto, 'https://') || str_starts_with($this->foto, 'data:')) {
+            return $this->foto;
+        }
+
+        $filename = basename($this->foto);
+
+        return url('/foto-bukti') . '?f=' . $filename;
+    }
 }

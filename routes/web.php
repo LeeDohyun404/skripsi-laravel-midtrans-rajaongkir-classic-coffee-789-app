@@ -33,6 +33,8 @@ Route::get('/foto-produk', [ProductImageController::class, 'showQuery']);
 Route::get('/storage/avatars/{filename}', [ProductImageController::class, 'show'])->where('filename', '[A-Za-z0-9._-]+');
 Route::get('/foto-avatar', [ProductImageController::class, 'showQuery']);
 Route::get('/foto-avatar/{filename}', [ProductImageController::class, 'show'])->where('filename', '[A-Za-z0-9._-]+');
+Route::get('/foto-bukti', [ProductImageController::class, 'showQuery'])->name('foto.bukti');
+Route::get('/storage/complaints/{filename}', [ProductImageController::class, 'show'])->where('filename', '[A-Za-z0-9._-]+');
 
 // DEBUG SEMENTARA — cek avatar user di DB (hapus setelah fix terverifikasi)
 Route::get('/debug-avatar', function () {
