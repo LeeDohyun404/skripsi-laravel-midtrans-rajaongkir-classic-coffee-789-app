@@ -56,13 +56,38 @@ class AdminController extends Controller
         return back()->with('success', 'Pelanggan berhasil dihapus!');
     }
 
-    public function stok()
+    public function stok(Request $request)
     {
-        $products    = DB::table('products')->get();
+        $query = DB::table('products');
+
+        if ($request->filled('search')) {
+            $query->where('name', 'like', '%' . $request->search . '%');
+        }
+
+        if ($request->filled('kategori')) {
+            $query->where('category', $request->kategori);
+        }
+
+        if ($request->filled('stok_filter')) {
+            match ($request->stok_filter) {
+                'habis'  => $query->where('stock', '<=', 0),
+                'rendah' => $query->whereBetween('stock', [1, 10]),
+                'aman'   => $query->where('stock', '>', 10),
+                default  => null,
+            };
+        }
+
+        $products     = $query->paginate(50)->withQueryString();
+        $kategoriList = DB::table('products')->distinct()->pluck('category')->filter();
+
         $totalProduk = DB::table('products')->count();
         $stokHabis   = DB::table('products')->where('stock', '<=', 0)->count();
         $stokRendah  = DB::table('products')->whereBetween('stock', [1, 10])->count();
         $stokAman    = DB::table('products')->where('stock', '>', 10)->count();
-        return view('admin.stok', compact('products', 'totalProduk', 'stokHabis', 'stokRendah', 'stokAman'));
+
+        return view('admin.stok', compact(
+            'products', 'kategoriList',
+            'totalProduk', 'stokHabis', 'stokRendah', 'stokAman'
+        ));
     }
 }
