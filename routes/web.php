@@ -85,8 +85,12 @@ Route::get('/', function () {
 });
 
 // =============================================
-// PRODUK
+// PRODUK & PAKET
 // =============================================
+Route::get('/paket', function () {
+    return view('paket');
+})->name('paket');
+
 Route::get('/produk', function () {
     if (!Schema::hasTable('products')) return "Tabel products tidak ditemukan di database!";
     $products = DB::table('products')->get();
@@ -94,17 +98,25 @@ Route::get('/produk', function () {
 });
 
 Route::get('/produk/{kategori}/{subkategori?}', function ($kategori, $subkategori = null) {
+    // Jika user mengakses /produk/Paket tanpa subkategori, arahkan ke halaman pilihan paket
+    if (strtolower($kategori) === 'paket' && empty($subkategori)) {
+        return redirect('/paket');
+    }
+
     if (!Schema::hasTable('products')) return "Tabel products tidak ditemukan!";
     $query = DB::table('products');
     if (Schema::hasColumn('products', 'category')) {
         $katCari = str_replace('-', ' ', $kategori);
         $query->where('category', 'like', "%$katCari%");
     }
-    if ($subkategori && Schema::hasColumn('products', 'subcategory')) {
+    if ($subkategori) {
         $subCari = str_replace('-', ' ', $subkategori);
         $query->where(function ($q) use ($subkategori, $subCari) {
-            $q->where('subcategory', 'like', "%$subkategori%")
-              ->orWhere('subcategory', 'like', "%$subCari%");
+            if (Schema::hasColumn('products', 'subcategory')) {
+                $q->where('subcategory', 'like', "%$subkategori%")
+                  ->orWhere('subcategory', 'like', "%$subCari%");
+            }
+            $q->orWhere('name', 'like', "%$subCari%");
         });
     }
     $products = $query->get();

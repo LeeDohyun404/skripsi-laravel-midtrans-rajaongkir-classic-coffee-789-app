@@ -106,6 +106,12 @@
                     <li><a href="/produk"         class="block px-4 py-2 hover:bg-amber-50 hover:text-amber-700 transition">Semua Produk</a></li>
                     <li><a href="/produk/Makanan" class="block px-4 py-2 hover:bg-amber-50 hover:text-amber-700 transition">Makanan</a></li>
                     <li><a href="/produk/Minuman" class="block px-4 py-2 hover:bg-amber-50 hover:text-amber-700 transition">Minuman</a></li>
+                    <li>
+                        <a href="/paket" class="block px-4 py-2 hover:bg-amber-50 hover:text-amber-700 transition flex items-center justify-between font-semibold text-amber-700">
+                            <span>Paket</span>
+                            <span class="bg-amber-100 text-amber-800 text-[10px] px-2 py-0.5 rounded-full font-bold">Hemat</span>
+                        </a>
+                    </li>
                 </ul>
             </li>
 
@@ -217,6 +223,10 @@
                     <a href="/produk"         class="block px-3 py-2 rounded-lg text-stone-600 hover:text-amber-700 hover:bg-amber-50 transition text-sm">Semua Produk</a>
                     <a href="/produk/Makanan" class="block px-3 py-2 rounded-lg text-stone-600 hover:text-amber-700 hover:bg-amber-50 transition text-sm">Makanan</a>
                     <a href="/produk/Minuman" class="block px-3 py-2 rounded-lg text-stone-600 hover:text-amber-700 hover:bg-amber-50 transition text-sm">Minuman</a>
+                    <a href="/paket"          class="block px-3 py-2 rounded-lg text-amber-700 font-semibold hover:bg-amber-50 transition text-sm flex items-center justify-between">
+                        <span>Paket</span>
+                        <span class="bg-amber-100 text-amber-800 text-[10px] px-2 py-0.5 rounded-full font-bold">Hemat</span>
+                    </a>
                 </div>
             </div>
 

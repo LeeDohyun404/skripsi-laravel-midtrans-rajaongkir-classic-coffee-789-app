@@ -17,8 +17,24 @@
 <body class="bg-[#fcfaf8] text-stone-900">
 
     <header class="py-16 text-center">
-        <p class="text-amber-600 font-bold uppercase tracking-[0.4em] text-[10px] mb-4">Curated Selection</p>
-        <h2 class="text-5xl font-serif italic mb-4">Daftar Menu Kami</h2>
+        <p class="text-amber-600 font-bold uppercase tracking-[0.4em] text-[10px] mb-4">
+            @if(isset($subkategori) && $subkategori)
+                {{ strtoupper($kategori) }} &bull; {{ strtoupper(str_replace('-', ' ', $subkategori)) }}
+            @elseif(isset($kategori) && $kategori)
+                KATEGORI &bull; {{ strtoupper($kategori) }}
+            @else
+                Curated Selection
+            @endif
+        </p>
+        <h2 class="text-5xl font-serif italic mb-4">
+            @if(isset($subkategori) && $subkategori)
+                Menu {{ ucfirst(str_replace('-', ' ', $subkategori)) }}
+            @elseif(isset($kategori) && $kategori)
+                Menu {{ ucfirst($kategori) }}
+            @else
+                Daftar Menu Kami
+            @endif
+        </h2>
         <div class="w-20 h-1 bg-amber-600 mx-auto rounded-full"></div>
     </header>
 
@@ -32,7 +48,7 @@
         @endif
 
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-            @foreach($products as $p)
+            @forelse($products as $p)
 
             @php $stokHabis = isset($p->stock) && $p->stock <= 0; @endphp
 
@@ -117,7 +133,27 @@
                 @endif
 
             </div>
-            @endforeach
+            @empty
+            <div class="col-span-full text-center py-16 bg-white rounded-[2.5rem] border border-stone-100 p-8 shadow-sm">
+                <div class="w-20 h-20 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-4 text-amber-600 text-3xl">
+                    <i class="fas fa-boxes-stacked"></i>
+                </div>
+                <h3 class="text-2xl font-serif italic text-stone-800 mb-2">Belum Ada Menu Pada Kategori Ini</h3>
+                <p class="text-stone-400 text-sm max-w-md mx-auto mb-6">
+                    Menu pilihan untuk kategori ini sedang disiapkan oleh tim Classic Coffee 789.
+                </p>
+                <div class="flex flex-wrap gap-3 justify-center">
+                    @if(isset($kategori) && strtolower($kategori) === 'paket')
+                        <a href="/paket" class="bg-amber-600 text-white px-6 py-3 rounded-2xl font-bold text-xs uppercase tracking-wider hover:bg-amber-700 transition shadow">
+                            <i class="fas fa-arrow-left mr-2"></i>Pilih Paket Lain
+                        </a>
+                    @endif
+                    <a href="/produk" class="bg-stone-900 text-white px-6 py-3 rounded-2xl font-bold text-xs uppercase tracking-wider hover:bg-stone-800 transition shadow">
+                        Lihat Semua Menu
+                    </a>
+                </div>
+            </div>
+            @endforelse
         </div>
     </main>
 

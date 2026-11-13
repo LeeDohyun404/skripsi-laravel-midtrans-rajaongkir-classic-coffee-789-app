@@ -588,6 +588,7 @@
                                 <option value="" disabled selected>-- Pilih Kategori --</option>
                                 <option value="Makanan">Makanan</option>
                                 <option value="Minuman">Minuman</option>
+                                <option value="Paket">Paket</option>
                             </select>
                         </div>
                         <div>
