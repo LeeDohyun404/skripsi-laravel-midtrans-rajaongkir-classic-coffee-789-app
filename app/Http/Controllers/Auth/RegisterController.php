@@ -44,13 +44,13 @@ class RegisterController extends Controller
             'email' => [
                 'required',
                 'string',
-                'email:rfc,dns',
+                'email:rfc',
                 'max:255',
                 'unique:users',
             ],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
         ], [
-            'email.email' => 'Format email tidak valid atau domain email tidak aktif/fiktif.',
+            'email.email' => 'Format alamat email tidak valid.',
         ]);
     }
 
