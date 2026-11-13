@@ -4,20 +4,11 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Foundation\Auth\AuthenticatesUsers;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class LoginController extends Controller
 {
-    /*
-    |--------------------------------------------------------------------------
-    | Login Controller
-    |--------------------------------------------------------------------------
-    |
-    | This controller handles authenticating users for the application and
-    | redirecting them to your home screen. The controller uses a trait
-    | to conveniently provide its functionality to your applications.
-    |
-    */
-
     use AuthenticatesUsers;
 
     /**
@@ -37,4 +28,16 @@ class LoginController extends Controller
         $this->middleware('guest')->except('logout');
         $this->middleware('auth')->only('logout');
     }
+
+    /**
+     * Blokir user yang belum verifikasi email (termasuk email fiktif)
+     */
+    protected function authenticated(Request $request, $user)
+    {
+        if ($user instanceof \Illuminate\Contracts\Auth\MustVerifyEmail && ! $user->hasVerifiedEmail()) {
+            Auth::logout();
+            return redirect()->route('login')->with('error', 'Login gagal! Email ini belum diverifikasi. Email fiktif atau email yang belum dikonfirmasi tidak dapat digunakan untuk login. Silakan cek inbox atau folder spam email Anda.');
+        }
+    }
 }
+

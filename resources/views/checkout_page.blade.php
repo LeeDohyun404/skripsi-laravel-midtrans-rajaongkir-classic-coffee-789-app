@@ -99,14 +99,24 @@
                 if ($cat === 'makanan') $hasMakanan = true;
                 if ($cat === 'minuman') $hasMinuman = true;
             }
-            // Jika ada makanan → force dine-in
+
+            // ── Voucher hanya bisa digunakan untuk minuman saja ──
+            // Jika voucher aktif tapi ada makanan, nonaktifkan voucher dari session
+            if ($voucherAktif && $hasMakanan) {
+                session()->forget(['voucher_active', 'voucher_id', 'voucher_code']);
+                $voucherAktif = false;
+                $voucherDiscountEarly = 0;
+                $isFreeOrder = false;
+            }
+
+            // Jika ada makanan → force dine-in (tanpa voucher)
             $forceDineIn = $isFreeOrder || $hasMakanan;
         @endphp
 
         {{-- FORM DETAIL PEMESAN --}}
         <div class="bg-white p-6 rounded-3xl shadow-sm border border-stone-100">
             <h3 class="text-lg font-bold text-stone-800 mb-4">👤 Detail Pemesan</h3>
-            <form id="checkout-form" action="{{ $isFreeOrder ? route('payment.cash') : route('payment.process') }}" method="POST">
+            <form id="checkout-form" action="{{ ($isFreeOrder || $voucherAktif) ? route('payment.cash') : route('payment.process') }}" method="POST">
                 @csrf
 
                 {{-- Nama (readonly dari user login) --}}
@@ -170,6 +180,16 @@
                         </div>
                         @endif
                     @else
+                        @if($voucherAktif)
+                            {{-- Voucher aktif tapi bukan gratis total: force dine-in & cash --}}
+                            <input type="hidden" name="order_type" value="dine-in">
+                            <div class="border-2 border-amber-500 bg-amber-50 rounded-xl p-3 flex items-center justify-center">
+                                <span class="font-bold text-stone-700">🍽️ Makan di Sini</span>
+                            </div>
+                            <div class="mt-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-700 font-semibold">
+                                🎉 Voucher aktif — hanya <strong>Makan di Sini</strong> &amp; pembayaran <strong>tunai (cash)</strong>. Voucher hanya berlaku untuk minuman.
+                            </div>
+                        @else
                         <div class="grid grid-cols-2 gap-4">
                             <label class="border-2 border-stone-200 rounded-xl p-3 flex items-center justify-center cursor-pointer has-[:checked]:border-amber-500 has-[:checked]:bg-amber-50">
                                 <input type="radio" name="order_type" value="dine-in" class="mr-2" checked onchange="toggleMetode('dine-in')">
@@ -179,10 +199,6 @@
                                 <input type="radio" name="order_type" value="take-away" class="mr-2" onchange="toggleMetode('take-away')">
                                 <span class="font-bold text-stone-700">🛵 Layanan Antar</span>
                             </label>
-                        </div>
-                        @if($voucherAktif)
-                        <div class="mt-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-700 font-semibold">
-                            🎉 Voucher aktif — diskon minuman termurah diterapkan otomatis
                         </div>
                         @endif
                     @endif
@@ -331,7 +347,7 @@
                 <input type="hidden" name="total" id="input-total" value="{{ max(0, $subtotal - $voucherDiscount) }}">
 
                 {{-- Hidden: tandai metode pembayaran --}}
-                @if($isFreeOrder)
+                @if($isFreeOrder || $voucherAktif)
                     <input type="hidden" name="payment_method" value="cash">
                 @endif
 
@@ -340,6 +356,11 @@
                     <button type="submit" id="btn-bayar"
                         class="w-full bg-amber-600 text-white py-4 rounded-2xl font-bold mt-6 hover:bg-amber-700 transition text-lg">
                         🎉 KLAIM PESANAN
+                    </button>
+                @elseif($voucherAktif)
+                    <button type="submit" id="btn-bayar"
+                        class="w-full bg-amber-600 text-white py-4 rounded-2xl font-bold mt-6 hover:bg-amber-700 transition text-lg">
+                        🎟️ PESAN DENGAN VOUCHER (BAYAR TUNAI)
                     </button>
                 @else
                     <button type="submit" id="btn-bayar"

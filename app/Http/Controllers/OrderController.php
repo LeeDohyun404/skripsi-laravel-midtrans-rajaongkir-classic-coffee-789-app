@@ -36,6 +36,33 @@ class OrderController extends Controller
 
         $cart = session()->get('cart', []);
 
+        // ── Validasi voucher: hanya boleh untuk dine-in & keranjang HANYA minuman ──
+        $hasVoucherSession = session('voucher_active') && session('voucher_id');
+
+        if ($hasVoucherSession) {
+            // Voucher hanya bisa digunakan untuk pesanan dine-in
+            if ($order_type !== 'dine-in') {
+                return back()->with('error', 'Voucher hanya bisa digunakan untuk pesanan Makan di Sini (Dine-In).');
+            }
+
+            // Voucher hanya bisa digunakan jika keranjang HANYA berisi minuman
+            $hasNonMinuman = false;
+            foreach ($cart as $pid => $item) {
+                $cat = strtolower($item['category'] ?? '');
+                if (empty($cat) && is_numeric($pid)) {
+                    $cat = strtolower(\Illuminate\Support\Facades\DB::table('products')->where('id', $pid)->value('category') ?? '');
+                }
+                if ($cat !== 'minuman') {
+                    $hasNonMinuman = true;
+                    break;
+                }
+            }
+
+            if ($hasNonMinuman) {
+                return back()->with('error', 'Voucher hanya bisa digunakan untuk pesanan minuman saja. Hapus item makanan dari keranjang atau nonaktifkan voucher di halaman profil.');
+            }
+        }
+
         // ── Terapkan voucher jika aktif ──────────────────────────────────
         $voucherDiscount = 0;
         $voucherModel    = null;
@@ -125,6 +152,19 @@ class OrderController extends Controller
 
             return redirect()->route('orders.struk', $orderId)
                 ->with('success', '🎉 Pesanan berhasil diklaim! Tunjukkan struk ini ke kasir untuk pembayaran tunai.');
+        }
+
+        // ── Jika pakai voucher tapi total > 0 → bayar tunai (tanpa Midtrans) ──
+        if ($usedVoucher && $total > 0) {
+            $orderModel = Order::find($orderId);
+            if ($orderModel && $voucherModel) {
+                CoffeeBeanService::markVoucherUsed($orderModel, $voucherModel);
+            }
+
+            session()->forget(['cart', 'voucher_active', 'voucher_id', 'voucher_code']);
+
+            return redirect()->route('orders.struk', $orderId)
+                ->with('success', '🎟️ Voucher diterapkan! Tunjukkan struk ini ke kasir. Sisa bayar Rp ' . number_format($total, 0, ',', '.') . ' secara tunai.');
         }
 
         // ── Proses Midtrans ──────────────────────────────────────────────

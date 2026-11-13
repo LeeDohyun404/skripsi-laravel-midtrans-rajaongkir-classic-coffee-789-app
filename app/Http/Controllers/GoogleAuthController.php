@@ -23,7 +23,23 @@ class GoogleAuthController extends Controller
         try {
             $googleUser = Socialite::driver('google')->stateless()->user();
 
-            $user = User::firstOrNew(['email' => $googleUser->getEmail()]);
+            $googleEmail = $googleUser->getEmail();
+
+            // ── Tolak email fiktif / non-Gmail ──
+            // Hanya izinkan domain Gmail asli (gmail.com & googlemail.com)
+            $allowedDomains = ['gmail.com', 'googlemail.com'];
+            $emailDomain = strtolower(substr(strrchr($googleEmail, '@'), 1));
+            if (! in_array($emailDomain, $allowedDomains)) {
+                return redirect('/login')->with('error', 'Hanya akun Gmail asli yang diizinkan untuk login.');
+            }
+
+            // Pastikan Google mengembalikan email yang terverifikasi
+            $googleRaw = $googleUser->getRaw();
+            if (empty($googleRaw['email_verified'])) {
+                return redirect('/login')->with('error', 'Email Google Anda belum diverifikasi. Silakan verifikasi email di Google terlebih dahulu.');
+            }
+
+            $user = User::firstOrNew(['email' => $googleEmail]);
 
             $user->name              = $user->name ?: $googleUser->getName();
             $user->google_id         = $googleUser->getId();
@@ -31,8 +47,8 @@ class GoogleAuthController extends Controller
             $user->email_verified_at = $user->email_verified_at ?? now();
 
             if (!$user->exists) {
-                // Akun baru dari Google: password acak, karena kolom wajib diisi
-                $user->password = Str::random(32);
+                // Akun baru dari Google: password NULL, menandai akun Google-only
+                $user->password = null;
             }
 
             $user->save();

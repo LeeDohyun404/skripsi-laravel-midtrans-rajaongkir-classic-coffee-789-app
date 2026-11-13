@@ -80,19 +80,27 @@ class ProfileController extends Controller
 
     /**
      * Update password
+     * User yang login via Google (punya google_id) tidak boleh ubah password.
      */
     public function updatePassword(Request $request)
     {
+        $user = Auth::user();
+
+        // ── Blokir user Google agar tidak bisa ubah password ──
+        if ($user->google_id) {
+            return back()->with('error', 'Akun Google tidak bisa mengubah password. Password dikelola oleh Google.');
+        }
+
         $request->validate([
             'current_password' => 'required',
             'password'         => 'required|min:8|confirmed',
         ]);
 
-        if (! Hash::check($request->current_password, Auth::user()->password)) {
+        if (! Hash::check($request->current_password, $user->password)) {
             return back()->withErrors(['current_password' => 'Password lama tidak sesuai.']);
         }
 
-        Auth::user()->update(['password' => Hash::make($request->password)]);
+        $user->update(['password' => Hash::make($request->password)]);
         return back()->with('success', 'Password berhasil diubah.');
     }
 

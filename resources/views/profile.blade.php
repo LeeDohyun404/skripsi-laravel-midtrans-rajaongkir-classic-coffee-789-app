@@ -566,6 +566,8 @@
                 <div class="mt-3 bg-amber-50 border border-amber-100 rounded-2xl px-5 py-4 text-xs text-amber-900 space-y-1">
                     <p class="font-bold mb-1">Syarat & Ketentuan</p>
                     <p>• Berlaku untuk <strong>1 item minuman</strong> dengan harga terendah di keranjang.</p>
+                    <p>• Keranjang hanya boleh berisi <strong>minuman saja</strong> — tidak bisa digabung dengan makanan.</p>
+                    <p>• Hanya untuk pesanan <strong>Makan di Sini (Dine-In)</strong> — tidak bisa diantar.</p>
                     <p>• Pembayaran hanya <strong>tunai (cash)</strong> — Midtrans tidak tersedia.</p>
                     <p>• Tidak bisa digabung dengan promo lain.</p>
                     <p>• Pembelian dengan voucher tidak menambah progress biji kopi.</p>
@@ -636,7 +638,7 @@
                 <h3 class="font-serif italic text-stone-800 text-xl mb-1">Ubah Password</h3>
                 <p class="text-stone-400 text-xs mb-5">Keamanan akun kamu.</p>
 
-                @if(Auth::user()->google_id && !Auth::user()->password)
+                @if(Auth::user()->google_id)
                 <div class="bg-blue-50 border border-blue-100 rounded-2xl p-4 flex gap-3 items-start">
                     <div class="w-9 h-9 bg-blue-100 rounded-xl flex items-center justify-center shrink-0">
                         <i class="fab fa-google text-blue-600 text-sm"></i>
