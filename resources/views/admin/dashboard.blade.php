@@ -104,5 +104,4 @@
         </table>
     </div>
 </div>
-@include('admin.modal_profil')
 @endsection

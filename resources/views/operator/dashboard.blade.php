@@ -87,7 +87,3 @@
 </div>
 
 @endsection
-
-@push('scripts')
-    @include('admin.modal_profil')
-@endpush

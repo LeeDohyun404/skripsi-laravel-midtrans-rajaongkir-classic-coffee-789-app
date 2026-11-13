@@ -12,7 +12,6 @@
     <a href="{{ route('kasir.transaksi') }}" class="nav-item {{ request()->routeIs('kasir.transaksi') ? 'active' : '' }}">
         <span class="nav-icon">🧾</span> Kelola Transaksi
     </a>
-    @include('admin.modal_profil')
 @endsection
 
 @push('styles')
