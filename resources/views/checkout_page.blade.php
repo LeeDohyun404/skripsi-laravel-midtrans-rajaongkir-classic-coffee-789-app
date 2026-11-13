@@ -87,8 +87,9 @@
             }
             $isFreeOrder = $voucherAktif && max(0, $subtotalEarly - $voucherDiscountEarly) == 0;
 
-            // ── Deteksi apakah keranjang mengandung makanan ──
+            // ── Deteksi apakah keranjang mengandung makanan atau paket ──
             $hasMakanan = false;
+            $hasPaket   = false;
             $hasMinuman = false;
             foreach ($cartEarly as $pid => $item) {
                 $cat = strtolower($item['category'] ?? '');
@@ -97,20 +98,23 @@
                     $cat = strtolower($prod ?? '');
                 }
                 if ($cat === 'makanan') $hasMakanan = true;
+                if ($cat === 'paket')   $hasPaket   = true;
                 if ($cat === 'minuman') $hasMinuman = true;
             }
 
+            $hasMakananOrPaket = $hasMakanan || $hasPaket;
+
             // ── Voucher hanya bisa digunakan untuk minuman saja ──
-            // Jika voucher aktif tapi ada makanan, nonaktifkan voucher dari session
-            if ($voucherAktif && $hasMakanan) {
+            // Jika voucher aktif tapi ada makanan atau paket, nonaktifkan voucher dari session
+            if ($voucherAktif && $hasMakananOrPaket) {
                 session()->forget(['voucher_active', 'voucher_id', 'voucher_code']);
                 $voucherAktif = false;
                 $voucherDiscountEarly = 0;
                 $isFreeOrder = false;
             }
 
-            // Jika ada makanan → force dine-in (tanpa voucher)
-            $forceDineIn = $isFreeOrder || $hasMakanan;
+            // Jika ada makanan atau paket → force dine-in (hanya pesan di tempat)
+            $forceDineIn = $isFreeOrder || $hasMakananOrPaket;
         @endphp
 
         {{-- FORM DETAIL PEMESAN --}}
@@ -169,14 +173,17 @@
                             🎉 Voucher aktif — hanya <strong>Makan di Sini</strong> &amp; pembayaran <strong>tunai (cash)</strong>
                         </div>
                     @elseif($forceDineIn)
-                        {{-- Ada makanan di keranjang → force dine-in --}}
+                        {{-- Ada makanan / paket di keranjang → force dine-in --}}
                         <input type="hidden" name="order_type" value="dine-in">
                         <div class="border-2 border-amber-500 bg-amber-50 rounded-xl p-3 flex items-center justify-center">
-                            <span class="font-bold text-stone-700">🍽️ Makan di Sini</span>
+                            <span class="font-bold text-stone-700">🍽️ Makan di Sini (Dine-In)</span>
                         </div>
-                        @if($hasMakanan)
-                        <div class="mt-3 bg-orange-50 border border-orange-200 rounded-xl px-4 py-3 text-sm text-orange-700 font-semibold">
-                            🍔 Pesananmu mengandung <strong>makanan</strong> — hanya tersedia metode <strong>Makan di Sini</strong>
+                        @if($hasMakananOrPaket)
+                        <div class="mt-3 bg-orange-50 border border-orange-200 rounded-xl px-4 py-3 text-sm text-orange-700 font-semibold flex items-start gap-2">
+                            <i class="fas fa-utensils text-orange-600 mt-0.5"></i>
+                            <div>
+                                Pesananmu mengandung <strong>{{ $hasPaket ? 'menu Paket / Makanan' : 'makanan' }}</strong> — hanya tersedia metode <strong>Makan di Sini (Dine-In)</strong> karena makanan tidak dapat dikirim menggunakan kurir.
+                            </div>
                         </div>
                         @endif
                     @else

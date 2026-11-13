@@ -130,6 +130,7 @@
                             <input type="hidden" name="id" value="{{ $p->id }}">
                             <input type="hidden" name="name" value="{{ $p->name }}">
                             <input type="hidden" name="price" value="{{ $p->price }}">
+                            <input type="hidden" name="category" value="{{ $p->category }}">
                             <input type="hidden" name="image" value="{{ $p->image_url }}">
                             <button type="submit"
                                 class="w-full bg-stone-900 text-white py-4 rounded-2xl font-bold text-xs uppercase tracking-[0.2em] flex items-center justify-center gap-3 hover:bg-amber-600 transition-all shadow-lg">

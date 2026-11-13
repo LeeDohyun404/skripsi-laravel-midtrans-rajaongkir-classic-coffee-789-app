@@ -110,6 +110,30 @@
                     @endauth
 
                     {{-- ── Total ── --}}
+                    @php
+                        $cartHasMakananOrPaket = false;
+                        foreach (session('cart', []) as $cid => $citem) {
+                            $ccat = strtolower($citem['category'] ?? '');
+                            if (empty($ccat) && is_numeric($cid)) {
+                                $ccat = strtolower(\Illuminate\Support\Facades\DB::table('products')->where('id', $cid)->value('category') ?? '');
+                            }
+                            if ($ccat === 'makanan' || $ccat === 'paket') {
+                                $cartHasMakananOrPaket = true;
+                                break;
+                            }
+                        }
+                    @endphp
+
+                    @if($cartHasMakananOrPaket)
+                        <div class="w-full bg-orange-50 border border-orange-200 rounded-2xl p-4 flex items-center gap-3 text-orange-800 text-xs sm:text-sm">
+                            <i class="fas fa-utensils text-orange-600 text-lg shrink-0"></i>
+                            <div>
+                                <span class="font-bold">Info Pemesanan:</span>
+                                Keranjangmu berisi produk makanan/paket. Pesanan ini hanya dapat dipesan untuk <strong>Makan di Sini (Dine-In)</strong> karena makanan tidak dapat dikirim via kurir.
+                            </div>
+                        </div>
+                    @endif
+
                     <div class="text-right">
                         <p class="text-sm text-stone-500 uppercase tracking-widest">Total Pembayaran</p>
                         <h3 class="text-3xl font-black text-stone-900 mb-2">Rp {{ number_format($total) }}</h3>
@@ -123,7 +147,7 @@
                             KEMBALI BELANJA
                         </a>
                         <a href="/checkout_page" class="bg-black text-white px-8 py-4 rounded-2xl font-bold hover:bg-amber-600 transition">
-                            LANJUT KE PENGIRIMAN
+                            {{ $cartHasMakananOrPaket ? 'LANJUT KE CHECKOUT' : 'LANJUT KE PENGIRIMAN' }}
                         </a>
                     </div>
 

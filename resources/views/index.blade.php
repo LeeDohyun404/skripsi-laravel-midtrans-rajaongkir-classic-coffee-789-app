@@ -87,6 +87,7 @@
                             <input type="hidden" name="id" value="{{ $product->id }}">
                             <input type="hidden" name="name" value="{{ $product->name }}">
                             <input type="hidden" name="price" value="{{ $product->price }}">
+                            <input type="hidden" name="category" value="{{ $product->category }}">
                             <input type="hidden" name="image" value="{{ $product->image_url }}">
                             <button type="submit"
                                 class="bg-stone-900 text-white h-12 w-12 rounded-2xl hover:bg-amber-700 transition flex items-center justify-center shadow-lg shadow-stone-200">

@@ -36,6 +36,23 @@ class OrderController extends Controller
 
         $cart = session()->get('cart', []);
 
+        // ── Validasi Produk Makanan & Paket: HANYA boleh dipesan di tempat (Dine-In) ──
+        $hasMakananOrPaket = false;
+        foreach ($cart as $pid => $item) {
+            $cat = strtolower($item['category'] ?? '');
+            if (empty($cat) && is_numeric($pid)) {
+                $cat = strtolower(\Illuminate\Support\Facades\DB::table('products')->where('id', $pid)->value('category') ?? '');
+            }
+            if ($cat === 'makanan' || $cat === 'paket') {
+                $hasMakananOrPaket = true;
+                break;
+            }
+        }
+
+        if ($hasMakananOrPaket && $order_type !== 'dine-in') {
+            return back()->with('error', 'Pesanan yang mengandung produk makanan atau paket hanya bisa dipesan di tempat (Makan di Sini / Dine-In), tidak dapat dikirim via kurir.');
+        }
+
         // ── Validasi voucher: hanya boleh untuk dine-in & keranjang HANYA minuman ──
         $hasVoucherSession = session('voucher_active') && session('voucher_id');
 
@@ -59,7 +76,7 @@ class OrderController extends Controller
             }
 
             if ($hasNonMinuman) {
-                return back()->with('error', 'Voucher hanya bisa digunakan untuk pesanan minuman saja. Hapus item makanan dari keranjang atau nonaktifkan voucher di halaman profil.');
+                return back()->with('error', 'Voucher hanya bisa digunakan untuk pesanan minuman saja. Hapus item makanan/paket dari keranjang atau nonaktifkan voucher di halaman profil.');
             }
         }
 
