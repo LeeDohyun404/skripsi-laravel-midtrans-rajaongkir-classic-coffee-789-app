@@ -584,6 +584,12 @@
                                                 <form method="POST" action="{{ route('kasir.pesanan.update', $o->id) }}" style="display:inline">
                                                     @csrf
                                                     @method('PUT')
+                                                    <input type="hidden" name="status" value="success">
+                                                    <button type="submit" class="btn btn-primary btn-sm btn-icon" title="Konfirmasi Lunas / Selesai" onclick="return confirm('Konfirmasi pembayaran pesanan ini sudah LUNAS?')">✓</button>
+                                                </form>
+                                                <form method="POST" action="{{ route('kasir.pesanan.update', $o->id) }}" style="display:inline">
+                                                    @csrf
+                                                    @method('PUT')
                                                     <input type="hidden" name="status" value="processing">
                                                     <button type="submit" class="btn btn-outline btn-sm btn-icon" title="Proses">▶</button>
                                                 </form>
@@ -592,8 +598,8 @@
                                                 <form method="POST" action="{{ route('kasir.pesanan.update', $o->id) }}" style="display:inline">
                                                     @csrf
                                                     @method('PUT')
-                                                    <input type="hidden" name="status" value="completed">
-                                                    <button type="submit" class="btn btn-primary btn-sm btn-icon" title="Selesai">✓</button>
+                                                    <input type="hidden" name="status" value="success">
+                                                    <button type="submit" class="btn btn-primary btn-sm btn-icon" title="Konfirmasi Lunas / Selesai" onclick="return confirm('Selesaikan pesanan ini?')">✓</button>
                                                 </form>
                                             @endif
                                         </div>

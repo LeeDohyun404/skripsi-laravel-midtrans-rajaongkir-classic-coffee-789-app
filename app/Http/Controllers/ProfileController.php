@@ -28,7 +28,7 @@ class ProfileController extends Controller
 
         $totalOrders   = $orders->count();
         $successOrders = $orders->filter(fn($o) =>
-            in_array($o->status, ['success', 'settlement', 'capture'])
+            in_array($o->status, ['success', 'settlement', 'capture', 'completed', 'claimed'])
         )->count();
         $pendingOrders = $orders->where('status', 'pending')->count();
 

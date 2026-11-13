@@ -398,12 +398,42 @@ class KasirController extends Controller
     {
         $request->validate(['status' => 'required|in:pending,processing,completed,cancelled,success']);
 
-        DB::table('orders')->where('id', $id)->update([
-            'status'     => $request->status,
-            'updated_at' => now(),
-        ]);
+        $newStatus = $request->status;
+        if ($newStatus === 'completed') {
+            $newStatus = 'success';
+        }
 
-        return back()->with('success', 'Status pesanan diperbarui!');
+        $order = \App\Models\Order::find($id);
+        if ($order) {
+            $order->update([
+                'status'     => $newStatus,
+                'updated_at' => now(),
+            ]);
+
+            // Jika status menjadi sukses / lunas
+            if (in_array($newStatus, ['success', 'completed'])) {
+                // Tandai voucher terpakai jika ada
+                if ($order->used_voucher && $order->voucher_id) {
+                    $voucher = \App\Models\Voucher::find($order->voucher_id);
+                    if ($voucher) {
+                        \App\Services\CoffeeBeanService::markVoucherUsed($order, $voucher);
+                    }
+                }
+
+                // Tambahkan progress biji kopi untuk item minuman yang dibayar
+                \App\Services\CoffeeBeanService::processOrder($order);
+
+                // Catat tracking pesanan
+                \App\Models\OrderTracking::create([
+                    'order_id'   => $order->id,
+                    'status'     => 'selesai',
+                    'keterangan' => 'Pembayaran dikonfirmasi kasir (Lunas).',
+                    'updated_by' => \Illuminate\Support\Facades\Auth::guard('karyawan')->user()->nama ?? 'Kasir',
+                ]);
+            }
+        }
+
+        return back()->with('success', 'Status pesanan berhasil diperbarui!');
     }
     // =====================================================
 // TAMBAHKAN METHOD INI DI DALAM CLASS KasirController

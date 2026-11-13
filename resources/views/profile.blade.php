@@ -181,12 +181,13 @@
             <div class="space-y-4">
                 @foreach($orders as $order)
                 @php
-                    $isSuccess   = in_array($order->status, ['success','settlement','capture']);
+                    $isSuccess   = in_array($order->status, ['success','settlement','capture','completed','claimed']);
                     $isCancelled = in_array($order->status, ['cancelled','cancel','deny','expire']);
+                    $isProcessing= $order->status === 'processing';
                     $isPending   = $order->status === 'pending';
-                    $statusClass = $isSuccess ? 'status-success' : ($isCancelled ? 'status-cancelled' : 'status-pending');
-                    $statusLabel = $isSuccess ? 'Sukses' : ($isCancelled ? 'Dibatalkan' : 'Menunggu Pembayaran');
-                    $statusIcon  = $isSuccess ? 'fa-check-circle' : ($isCancelled ? 'fa-times-circle' : 'fa-clock');
+                    $statusClass = $isSuccess ? 'status-success' : ($isCancelled ? 'status-cancelled' : ($isProcessing ? 'status-pending' : 'status-pending'));
+                    $statusLabel = $isSuccess ? 'Sukses' : ($isCancelled ? 'Dibatalkan' : ($isProcessing ? 'Diproses' : 'Menunggu Pembayaran'));
+                    $statusIcon  = $isSuccess ? 'fa-check-circle' : ($isCancelled ? 'fa-times-circle' : ($isProcessing ? 'fa-spinner fa-spin' : 'fa-clock'));
                 @endphp
 
                 <div class="bg-white rounded-3xl border border-stone-100 shadow-sm overflow-hidden">
