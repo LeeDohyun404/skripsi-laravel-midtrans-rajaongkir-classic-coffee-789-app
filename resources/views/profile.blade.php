@@ -761,7 +761,14 @@
                         </span>
                     </div>
                     <p class="text-xs text-stone-500 mb-1">Pesanan: <strong>{{ $c->order->number ?? '-' }}</strong> · {{ \Carbon\Carbon::parse($c->created_at)->locale('id')->isoFormat('D MMM YYYY') }}</p>
-                    <p class="text-sm text-stone-600">{{ $c->detail }}</p>
+                    <p class="text-sm text-stone-600 mb-2">{{ $c->detail }}</p>
+                    @if($c->foto)
+                    <div class="mb-2">
+                        <a href="{{ $c->foto }}" target="_blank" class="inline-flex items-center gap-1.5 text-xs text-amber-700 hover:text-amber-800 font-semibold bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200">
+                            📷 Lihat Foto Bukti
+                        </a>
+                    </div>
+                    @endif
                     @if($c->catatan_operator)
                     <div class="mt-2 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2">
                         <p class="text-xs font-bold text-amber-700 mb-1">Respon Tim Classic Coffee:</p>

@@ -79,14 +79,6 @@ Route::get('/debug-avatar', function () {
     ]);
 });
 
-Route::get('/debug-complaint', function () {
-    $complaints = \App\Models\OrderComplaint::with('order')
-        ->orderByDesc('id')
-        ->limit(10)
-        ->get();
-    return response()->json($complaints);
-});
-
 // =============================================
 // HALAMAN UTAMA
 // =============================================

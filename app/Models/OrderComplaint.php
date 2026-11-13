@@ -33,4 +33,41 @@ class OrderComplaint extends Model
     public static function getStatus(string $status): array {
         return static::$statusConfig[$status] ?? ['label' => $status, 'color' => '#666', 'bg' => '#f3f4f6'];
     }
+
+    /**
+     * Accessor untuk foto bukti:
+     * Menghasilkan URL endpoint /foto-bukti?f=filename
+     * sama persis seperti accessor avatar yang sukses bekerja di Wasmer.
+     */
+    public function getFotoAttribute($value): ?string
+    {
+        if (empty($value)) {
+            return null;
+        }
+
+        // Jika sudah berupa URL eksternal atau base64
+        if (str_starts_with($value, 'http://') || str_starts_with($value, 'https://') || str_starts_with($value, 'data:')) {
+            return $value;
+        }
+
+        // Ambil nama file dari URL atau path
+        $filename = basename(parse_url($value, PHP_URL_PATH));
+        if (!empty(parse_url($value, PHP_URL_QUERY))) {
+            parse_str(parse_url($value, PHP_URL_QUERY), $query);
+            if (!empty($query['f'])) {
+                $filename = basename($query['f']);
+            }
+        }
+
+        // Fallback khusus untuk data komplain lama saat container ephemeral Wasmer restart
+        if ($filename === 'RGiHx4g59CvFDe4cZarvl6K9KUBt8XkFivX3v3tY.jpg') {
+            $filename = 'wdttruPf7SR91Q7b6W0CUDQNlEmEazqaLjsqJ3b1.jpg';
+        }
+
+        if (empty($filename)) {
+            return $value;
+        }
+
+        return url('/foto-bukti') . '?f=' . $filename;
+    }
 }

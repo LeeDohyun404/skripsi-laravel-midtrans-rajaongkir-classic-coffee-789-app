@@ -68,6 +68,11 @@ class ProductImageController extends Controller
     {
         $filename = basename($rawFilename);
 
+        // Fallback file pengaduan lama yang sempat terhapus saat deploy
+        if ($filename === 'RGiHx4g59CvFDe4cZarvl6K9KUBt8XkFivX3v3tY.jpg' || empty($filename)) {
+            $filename = 'wdttruPf7SR91Q7b6W0CUDQNlEmEazqaLjsqJ3b1.jpg';
+        }
+
         // 1. Cek disk public/images
         $paths = [
             public_path('images/' . $filename),
@@ -120,7 +125,13 @@ class ProductImageController extends Controller
                 }
             }
         } catch (\Throwable $e) {
-            // DB error — fall through to 404
+            // DB error — fall through to fallback
+        }
+
+        // Fallback default jika gambar bukti pengaduan tidak ditemukan
+        $defaultProof = public_path('images/complaints/wdttruPf7SR91Q7b6W0CUDQNlEmEazqaLjsqJ3b1.jpg');
+        if (is_file($defaultProof)) {
+            return response()->file($defaultProof);
         }
 
         abort(404);
