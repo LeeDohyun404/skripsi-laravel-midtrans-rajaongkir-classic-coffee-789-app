@@ -539,7 +539,7 @@
                             <td>
                                 <div class="action-group">
                                     <button type="button" class="btn btn-outline btn-sm" onclick="modalUpdateStok({{ $p->id }}, @js($p->name), {{ $p->stock ?? 0 }})">Stok</button>
-                                    <button type="button" class="btn btn-primary btn-sm" onclick="modalEditProduk({{ $p->id }}, @js($p->name), {{ $p->price }}, @js($p->category))">Edit</button>
+                                    <button type="button" class="btn btn-primary btn-sm" onclick="modalEditProduk({{ $p->id }}, @js($p->name), {{ $p->price }}, @js($p->category), @js($p->description ?? ''))">Edit</button>
                                     <form method="POST" action="{{ route('operator.produk.hapus', $p->id) }}" style="display:inline" onsubmit="return confirm('Hapus produk {{ addslashes($p->name) }}?')">
                                         @csrf
                                         @method('DELETE')
@@ -598,6 +598,10 @@
                         <div>
                             <label class="field-label">Foto Produk</label>
                             <input type="file" name="image" class="form-file-modern" accept="image/*">
+                        </div>
+                        <div style="grid-column: 1 / -1;">
+                            <label class="field-label">Deskripsi / Isi Paket <span class="text-xs text-stone-400 font-normal">(Khusus paket: sebutkan apa saja yang didapat, misal: 2x Caramel Latte + 1x Toast Bread)</span></label>
+                            <textarea name="description" rows="3" class="form-control-modern" placeholder="Contoh: 1x Caramel Latte, 1x Hazelnut Latte, 1x Roti Bakar"></textarea>
                         </div>
                     </div>
                 </div>
@@ -664,6 +668,10 @@
                             <label class="field-label">Ganti Foto (opsional)</label>
                             <input type="file" name="image" class="form-file-modern" accept="image/*">
                         </div>
+                        <div style="grid-column: 1 / -1;">
+                            <label class="field-label">Deskripsi / Isi Paket <span class="text-xs text-stone-400 font-normal">(Khusus paket: sebutkan apa saja yang didapat)</span></label>
+                            <textarea name="description" id="editDeskripsi" rows="3" class="form-control-modern" placeholder="Contoh: 1x Caramel Latte, 1x Hazelnut Latte, 1x Roti Bakar"></textarea>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-card-footer">
@@ -692,11 +700,12 @@
             bukaModal('modalStok');
         }
 
-        function modalEditProduk(id, nama, harga, kategori) {
+        function modalEditProduk(id, nama, harga, kategori, deskripsi) {
             document.getElementById('editProdukId').value = id;
             document.getElementById('editNama').value = nama;
             document.getElementById('editHarga').value = harga;
             document.getElementById('editKategori').value = kategori ?? '';
+            document.getElementById('editDeskripsi').value = deskripsi ?? '';
             bukaModal('modalEditProduk');
         }
 

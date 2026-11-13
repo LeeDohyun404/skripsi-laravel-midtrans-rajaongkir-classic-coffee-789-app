@@ -262,33 +262,32 @@ Route::middleware(['admin_auth'])->group(function () {
     });
 
     Route::post('/admin/simpan', function (Request $request) {
+        \App\Http\Controllers\OperatorController::pastikanKolomDescription();
         $name_image = 'default.jpg';
         if ($request->hasFile('image')) {
-            $image = $request->file('image');
-            $name_image = time() . '.' . $image->getClientOriginalExtension();
-            $image->move(public_path('images'), $name_image);
+            $name_image = ProductImageController::simpan($request->file('image'));
         }
         DB::table('products')->insert([
-            'name'       => $request->name,
-            'price'      => $request->price,
-            'category'   => $request->category,
-            'image_url'  => $name_image,
-            'created_at' => now(),
+            'name'        => $request->name,
+            'price'       => $request->price,
+            'category'    => $request->category,
+            'description' => $request->description,
+            'image_url'   => $name_image,
+            'created_at'  => now(),
         ]);
         return redirect('/admin')->with('success', 'Produk berhasil ditambah!');
     });
 
     Route::post('/admin/update', function (Request $request) {
+        \App\Http\Controllers\OperatorController::pastikanKolomDescription();
         $data = [
-            'name'     => $request->name,
-            'price'    => $request->price,
-            'category' => $request->category,
+            'name'        => $request->name,
+            'price'       => $request->price,
+            'category'    => $request->category,
+            'description' => $request->description,
         ];
         if ($request->hasFile('image')) {
-            $image = $request->file('image');
-            $name_image = time() . '.' . $image->getClientOriginalExtension();
-            $image->move(public_path('images'), $name_image);
-            $data['image_url'] = $name_image;
+            $data['image_url'] = ProductImageController::simpan($request->file('image'));
         }
         DB::table('products')->where('id', $request->id)->update($data);
         return redirect('/admin')->with('success', 'Produk Berhasil Diperbarui!');

@@ -73,13 +73,28 @@ class OperatorController extends Controller
         ));
     }
 
+    public static function pastikanKolomDescription(): void
+    {
+        if (\Illuminate\Support\Facades\Schema::hasTable('products') && !\Illuminate\Support\Facades\Schema::hasColumn('products', 'description')) {
+            try {
+                \Illuminate\Support\Facades\Schema::table('products', function ($table) {
+                    $table->text('description')->nullable()->after('category');
+                });
+            } catch (\Throwable $e) {}
+        }
+    }
+
     public function storeProduk(Request $request)
     {
+        self::pastikanKolomDescription();
+
         $request->validate([
-            'name'  => 'required|max:100',
-            'price' => 'required|numeric|min:0',
-            'stock' => 'nullable|integer|min:0',
-            'image' => 'nullable|image|max:2048',
+            'name'        => 'required|max:100',
+            'price'       => 'required|numeric|min:0',
+            'category'    => 'nullable|string|max:100',
+            'description' => 'nullable|string',
+            'stock'       => 'nullable|integer|min:0',
+            'image'       => 'nullable|image|max:2048',
         ]);
 
         $image = 'default.jpg';
@@ -88,13 +103,14 @@ class OperatorController extends Controller
         }
 
         DB::table('products')->insert([
-            'name'       => $request->name,
-            'price'      => $request->price,
-            'category'   => $request->category,
-            'stock'      => $request->stock ?? 0,
-            'image_url'  => $image,
-            'created_at' => now(),
-            'updated_at' => now(),
+            'name'        => $request->name,
+            'price'       => $request->price,
+            'category'    => $request->category,
+            'description' => $request->description,
+            'stock'       => $request->stock ?? 0,
+            'image_url'   => $image,
+            'created_at'  => now(),
+            'updated_at'  => now(),
         ]);
 
         return back()->with('success', 'Produk berhasil ditambahkan!');
@@ -102,18 +118,22 @@ class OperatorController extends Controller
 
     public function updateProduk(Request $request)
     {
+        self::pastikanKolomDescription();
+
         $request->validate([
-            'id'    => 'required',
-            'name'  => 'required',
-            'price' => 'required|numeric',
-            'image' => 'nullable|image|max:2048',
+            'id'          => 'required',
+            'name'        => 'required',
+            'price'       => 'required|numeric',
+            'description' => 'nullable|string',
+            'image'       => 'nullable|image|max:2048',
         ]);
 
         $data = [
-            'name'       => $request->name,
-            'price'      => $request->price,
-            'category'   => $request->category,
-            'updated_at' => now(),
+            'name'        => $request->name,
+            'price'       => $request->price,
+            'category'    => $request->category,
+            'description' => $request->description,
+            'updated_at'  => now(),
         ];
 
         if ($request->hasFile('image')) {

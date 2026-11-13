@@ -99,9 +99,21 @@
                         </p>
                     @endif
 
-                    <p class="text-amber-700 font-extrabold text-lg mb-4">
+                    <p class="text-amber-700 font-extrabold text-lg mb-2">
                         Rp {{ number_format($p->price) }}
                     </p>
+
+                    {{-- Khusus Paket / Produk yang memiliki deskripsi isi paket --}}
+                    @if(!empty($p->description))
+                        <div class="mt-2 mb-4 bg-amber-50/80 border border-amber-200/80 rounded-2xl p-3 text-xs text-stone-700 shadow-sm">
+                            <p class="font-bold text-amber-900 mb-1 flex items-center gap-1.5 text-[11px] uppercase tracking-wider">
+                                <i class="fas fa-boxes-stacked text-amber-600"></i> Isi Paket:
+                            </p>
+                            <p class="text-stone-600 leading-relaxed whitespace-pre-line">{{ $p->description }}</p>
+                        </div>
+                    @else
+                        <div class="mb-2"></div>
+                    @endif
                 </div>
 
                 {{-- Tombol beli --}}
