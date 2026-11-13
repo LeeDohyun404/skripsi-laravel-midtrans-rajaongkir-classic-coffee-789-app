@@ -41,6 +41,20 @@ class ProductImageController extends Controller
         return $name;
     }
 
+    /** Simpan binary data langsung (dari canvas/base64 JS). */
+    public static function simpanRaw(string $filename, string $mime, string $binaryData): void
+    {
+        self::pastikanTabel();
+
+        DB::table('product_images')->insert([
+            'filename'   => $filename,
+            'mime'       => $mime,
+            'data'       => base64_encode($binaryData),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+    }
+
     /** URL tanpa ekstensi (?f=nama.jpg) supaya tidak dicegat server statis. */
     public function showQuery(\Illuminate\Http\Request $request)
     {

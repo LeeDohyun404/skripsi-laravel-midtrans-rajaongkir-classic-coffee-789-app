@@ -106,15 +106,46 @@ class ProfileController extends Controller
 
     /**
      * Update avatar / foto profil
+     * Mendukung:
+     *   1. multipart/form-data  (file upload biasa)
+     *   2. application/json     { avatar_base64: "..." }  (dari canvas kompres JS)
      */
     public function updateAvatar(Request $request)
     {
-        $request->validate(['avatar' => 'required|image|mimes:jpg,jpeg,png,gif,webp|max:2048']);
-
         $user = Auth::user();
+
+        // ── Mode 2: JSON base64 dari canvas kompres ──────────────────────
+        if ($request->isJson() || $request->has('avatar_base64')) {
+            $b64 = $request->input('avatar_base64');
+            if (!$b64) {
+                return response()->json(['error' => 'Data gambar kosong.'], 422);
+            }
+
+            try {
+                $binaryData = base64_decode($b64, true);
+                if (!$binaryData || strlen($binaryData) < 100) {
+                    return response()->json(['error' => 'Data gambar tidak valid.'], 422);
+                }
+
+                // Simpan ke DB via ProductImageController
+                $filename = 'av-' . time() . '-' . bin2hex(random_bytes(3)) . '.jpg';
+                \App\Http\Controllers\ProductImageController::simpanRaw($filename, 'image/jpeg', $binaryData);
+
+                $avatarUrl = url('/foto-avatar/' . $filename);
+                $user->update(['avatar' => $avatarUrl]);
+
+                return response()->json(['url' => $avatarUrl]);
+            } catch (\Throwable $e) {
+                return response()->json(['error' => 'Gagal menyimpan: ' . $e->getMessage()], 500);
+            }
+        }
+
+        // ── Mode 1: file upload multipart biasa ──────────────────────────
+        $request->validate(['avatar' => 'required|image|mimes:jpg,jpeg,png,gif,webp|max:4096']);
+
         $file = $request->file('avatar');
 
-        // Simpan ke database via ProductImageController agar gambar persisten dan tidak hilang saat deploy
+        // Simpan ke database via ProductImageController agar gambar persisten
         $filename = ProductImageController::simpan($file);
 
         // Simpan salinan ke storage disk jika memungkinkan
@@ -122,7 +153,6 @@ class ProfileController extends Controller
             $file->storeAs('avatars', $filename, 'public');
         } catch (\Throwable $e) {}
 
-        // Set URL avatar
         $avatarUrl = url('/foto-avatar/' . $filename);
         $user->update(['avatar' => $avatarUrl]);
 

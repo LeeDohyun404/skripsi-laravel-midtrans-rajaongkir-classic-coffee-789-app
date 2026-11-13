@@ -83,7 +83,7 @@
             <form id="avatarForm" action="{{ route('profile.avatar') }}" method="POST" enctype="multipart/form-data">
                 @csrf
                 <input type="file" id="avatarInput" name="avatar" class="hidden" accept="image/*"
-                       onchange="document.getElementById('avatarForm').submit()">
+                       onchange="compressAndSubmitAvatar(this, 'avatarForm')">
             </form>
         </div>
 
@@ -712,17 +712,18 @@
                             </div>
                         @endif
                     </div>
-                    <form action="{{ route('profile.avatar') }}" method="POST" enctype="multipart/form-data" class="flex-1">
+                    <form id="avatarForm2" action="{{ route('profile.avatar') }}" method="POST" enctype="multipart/form-data" class="flex-1">
                         @csrf
                         <div class="border-2 border-dashed border-stone-200 rounded-2xl p-5 text-center hover:border-amber-400 transition cursor-pointer relative">
-                            <input type="file" name="avatar" accept="image/*" onchange="previewAvatar(this)"
+                            <input type="file" id="avatarInput2" name="avatar" accept="image/*" onchange="compressAndSubmitAvatar(this, 'avatarForm2')"
                                 class="absolute inset-0 opacity-0 cursor-pointer w-full h-full">
                             <i class="fas fa-cloud-upload-alt text-stone-300 text-2xl mb-2"></i>
                             <p class="text-stone-400 text-sm font-semibold" id="avatarFileName">Klik untuk upload foto</p>
                             <p class="text-stone-300 text-xs mt-1">JPG, PNG, GIF — maks 2MB</p>
                         </div>
                         @error('avatar')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
-                        <button type="submit" class="mt-3 w-full bg-stone-900 text-white py-3 rounded-2xl font-bold text-sm hover:bg-amber-700 transition">
+                        <button type="button" onclick="document.getElementById('avatarInput2').click()"
+                            class="mt-3 w-full bg-stone-900 text-white py-3 rounded-2xl font-bold text-sm hover:bg-amber-700 transition">
                             <i class="fas fa-upload mr-2"></i>Upload Foto
                         </button>
                     </form>
@@ -875,6 +876,75 @@ function previewAvatar(input) {
         };
         reader.readAsDataURL(input.files[0]);
     }
+}
+
+/**
+ * Kompres gambar via Canvas (max 800px, quality 0.82) lalu kirim sebagai base64 JSON.
+ * Ini mencegah error 2MB karena foto kamera asli bisa 5-10MB.
+ */
+function compressAndSubmitAvatar(input, formId) {
+    if (!input.files || !input.files[0]) return;
+    const file = input.files[0];
+    const fname = document.getElementById('avatarFileName');
+    if (fname) fname.textContent = 'Memproses...';
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+            const MAX = 800;
+            let w = img.width, h = img.height;
+            if (w > MAX || h > MAX) {
+                if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
+                else       { w = Math.round(w * MAX / h); h = MAX; }
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = w; canvas.height = h;
+            canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+            const base64  = dataUrl.split(',')[1];
+
+            // Kirim via fetch JSON agar tidak terkena limit upload file PHP
+            const form = document.getElementById(formId);
+            const csrf = form.querySelector('[name="_token"]').value;
+            if (fname) fname.textContent = 'Mengunggah...';
+
+            fetch('{{ route("profile.avatar") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrf,
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify({ avatar_base64: base64 })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.url) {
+                    // Update semua img avatar di halaman tanpa reload
+                    document.querySelectorAll('img[src*="foto-avatar"], img[src*="lh3.google"]').forEach(el => {
+                        el.src = data.url + '?t=' + Date.now();
+                        el.style.display = '';
+                    });
+                    // Hide fallback circles
+                    ['avatar-fallback-top','avatar-fallback-edit'].forEach(id => {
+                        const el = document.getElementById(id);
+                        if (el) el.style.display = 'none';
+                    });
+                    if (fname) fname.textContent = 'Foto berhasil diupload!';
+                } else {
+                    if (fname) fname.textContent = data.error || 'Gagal upload';
+                    alert(data.error || 'Upload gagal, coba lagi.');
+                }
+            })
+            .catch(() => {
+                if (fname) fname.textContent = 'Klik untuk upload foto';
+                alert('Koneksi gagal, coba lagi.');
+            });
+        };
+        img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
 }
 
 function bayar(snapToken, orderId) {
