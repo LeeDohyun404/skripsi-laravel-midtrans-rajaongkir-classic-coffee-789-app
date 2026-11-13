@@ -45,6 +45,7 @@ Route::get('/debug-avatar', function () {
         ->orWhere('filename', 'like', 'av-%')
         ->orderByDesc('id')->limit(5)->get(['id','filename','mime','created_at']);
     $curlOk = function_exists('curl_init') ? 'yes' : 'no';
+
     // Test download Google avatar
     $testDownload = null;
     if ($user->avatar && str_contains($user->avatar, 'googleusercontent.com')) {
@@ -76,6 +77,14 @@ Route::get('/debug-avatar', function () {
         'direct_url'     => $latestFile ? (url('/foto-avatar') . '?f=' . $latestFile->filename) : null,
         'recent_images'  => $inDb,
     ]);
+});
+
+Route::get('/debug-complaint', function () {
+    $complaints = \App\Models\OrderComplaint::with('order')
+        ->orderByDesc('id')
+        ->limit(10)
+        ->get();
+    return response()->json($complaints);
 });
 
 // =============================================

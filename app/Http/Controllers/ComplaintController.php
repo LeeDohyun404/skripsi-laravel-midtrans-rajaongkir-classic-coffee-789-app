@@ -34,20 +34,15 @@ class ComplaintController extends Controller
                       ->where('customer_email', $user->email)
                       ->firstOrFail();
 
-        // Upload foto ke MySQL DB agar tersimpan permanen di Wasmer
-        $filename = ProductImageController::simpan($request->file('foto'));
-
-        // Simpan juga salinan ke storage lokal jika memungkinkan
-        try {
-            $request->file('foto')->storeAs('complaints', $filename, 'public');
-        } catch (\Throwable $e) {}
+        // Upload foto
+        $fotoPath = $request->file('foto')->store('complaints', 'public');
 
         OrderComplaint::create([
             'order_id' => $order->id,
             'user_id'  => $user->id,
             'jenis'    => $request->jenis,
             'detail'   => $request->detail,
-            'foto'     => $filename,
+            'foto'     => $fotoPath,
             'status'   => 'menunggu',
         ]);
 

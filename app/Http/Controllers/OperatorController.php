@@ -247,6 +247,9 @@ class OperatorController extends Controller
 
     public function pengaduan(Request $request)
     {
+        // Pastikan semua foto bukti di disk tersinkron ke DB MySQL
+        $this->syncComplaintImages();
+
         $filter = $request->get('filter', 'semua');
 
         $query = \App\Models\OrderComplaint::with('order')
@@ -277,5 +280,44 @@ class OperatorController extends Controller
 
         $cfg = \App\Models\OrderComplaint::getStatus($request->status);
         return back()->with('success', '✅ Pengaduan berhasil diupdate ke "' . $cfg['label'] . '".');
+    }
+
+    /**
+     * Sinkronkan foto komplain dari public/images/complaints ke database MySQL.
+     */
+    private function syncComplaintImages(): void
+    {
+        try {
+            $dirs = [
+                public_path('images/complaints'),
+                storage_path('app/public/complaints'),
+            ];
+
+            foreach ($dirs as $dir) {
+                if (!is_dir($dir)) continue;
+                $files = glob($dir . '/*.*');
+                foreach ($files as $filePath) {
+                    if (!is_file($filePath)) continue;
+                    $filename = basename($filePath);
+                    $exists = \Illuminate\Support\Facades\DB::table('product_images')->where('filename', $filename)->exists();
+                    if (!$exists) {
+                        $ext = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
+                        $mime = match($ext) {
+                            'png'   => 'image/png',
+                            'webp'  => 'image/webp',
+                            'gif'   => 'image/gif',
+                            default => 'image/jpeg',
+                        };
+                        \Illuminate\Support\Facades\DB::table('product_images')->insert([
+                            'filename'   => $filename,
+                            'mime'       => $mime,
+                            'data'       => base64_encode(file_get_contents($filePath)),
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ]);
+                    }
+                }
+            }
+        } catch (\Throwable $e) {}
     }
 }

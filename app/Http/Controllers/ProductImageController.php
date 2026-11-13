@@ -58,31 +58,53 @@ class ProductImageController extends Controller
     /** URL tanpa ekstensi (?f=nama.jpg) supaya tidak dicegat server statis. */
     public function showQuery(\Illuminate\Http\Request $request)
     {
-        return $this->show((string) $request->query('f', ''));
+        $f = (string) $request->query('f', '');
+        $filename = basename($f);
+        return $this->show($filename);
     }
 
     /** Dipakai kalau file tidak ada di public/images (mis. hilang setelah deploy). */
-    public function show(string $filename)
+    public function show(string $rawFilename)
     {
+        $filename = basename($rawFilename);
+
         // 1. Cek disk public/images
-        $path = public_path('images/' . $filename);
-        if (is_file($path)) {
-            return response()->file($path);
+        $paths = [
+            public_path('images/' . $filename),
+            public_path('images/complaints/' . $filename),
+            storage_path('app/public/complaints/' . $filename),
+            storage_path('app/public/avatars/' . $filename),
+            storage_path('app/public/' . $filename),
+        ];
+
+        foreach ($paths as $path) {
+            if (is_file($path)) {
+                // Auto-sync ke DB jika belum ada
+                try {
+                    $exists = DB::table('product_images')->where('filename', $filename)->exists();
+                    if (!$exists) {
+                        $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+                        $mime = match($ext) {
+                            'png'   => 'image/png',
+                            'webp'  => 'image/webp',
+                            'gif'   => 'image/gif',
+                            default => 'image/jpeg',
+                        };
+                        DB::table('product_images')->insert([
+                            'filename'   => $filename,
+                            'mime'       => $mime,
+                            'data'       => base64_encode(file_get_contents($path)),
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ]);
+                    }
+                } catch (\Throwable $e) {}
+
+                return response()->file($path);
+            }
         }
 
-        // 2. Cek storage avatars
-        $avatarPath = storage_path('app/public/avatars/' . $filename);
-        if (is_file($avatarPath)) {
-            return response()->file($avatarPath);
-        }
-
-        // 3. Cek storage complaints
-        $complaintPath = storage_path('app/public/complaints/' . $filename);
-        if (is_file($complaintPath)) {
-            return response()->file($complaintPath);
-        }
-
-        // 4. Ambil dari DB — langsung query tanpa Schema::hasTable (lebih andal di Wasmer WASM)
+        // 2. Ambil dari DB — langsung query tanpa Schema::hasTable (lebih andal di Wasmer WASM)
         try {
             $img = DB::table('product_images')
                 ->where('filename', $filename)

@@ -23,56 +23,42 @@ return new class extends Migration
             });
         }
 
-        // 2. Scan file fisik di storage/app/public/complaints
-        $dir = storage_path('app/public/complaints');
-        if (is_dir($dir)) {
-            $files = glob($dir . '/*.*');
-            foreach ($files as $filePath) {
-                if (is_file($filePath)) {
-                    $filename = basename($filePath);
-                    try {
-                        $exists = DB::table('product_images')->where('filename', $filename)->exists();
-                        if (!$exists) {
-                            $ext = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
-                            $mime = match($ext) {
-                                'png'   => 'image/png',
-                                'webp'  => 'image/webp',
-                                'gif'   => 'image/gif',
-                                default => 'image/jpeg',
-                            };
-                            $data = base64_encode(file_get_contents($filePath));
-                            DB::table('product_images')->insert([
-                                'filename'   => $filename,
-                                'mime'       => $mime,
-                                'data'       => $data,
-                                'created_at' => now(),
-                                'updated_at' => now(),
-                            ]);
-                        }
-                    } catch (\Throwable $e) {
-                        // ignore duplicate or error
+        // 2. Scan file fisik di public/images/complaints dan storage/app/public/complaints
+        $dirs = [
+            public_path('images/complaints'),
+            storage_path('app/public/complaints'),
+        ];
+
+        foreach ($dirs as $dir) {
+            if (is_dir($dir)) {
+                $files = glob($dir . '/*.*');
+                foreach ($files as $filePath) {
+                    if (is_file($filePath)) {
+                        $filename = basename($filePath);
+                        try {
+                            $exists = DB::table('product_images')->where('filename', $filename)->exists();
+                            if (!$exists) {
+                                $ext = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
+                                $mime = match($ext) {
+                                    'png'   => 'image/png',
+                                    'webp'  => 'image/webp',
+                                    'gif'   => 'image/gif',
+                                    default => 'image/jpeg',
+                                };
+                                $data = base64_encode(file_get_contents($filePath));
+                                DB::table('product_images')->insert([
+                                    'filename'   => $filename,
+                                    'mime'       => $mime,
+                                    'data'       => $data,
+                                    'created_at' => now(),
+                                    'updated_at' => now(),
+                                ]);
+                            }
+                        } catch (\Throwable $e) {}
                     }
                 }
             }
         }
-
-        // 3. Fallback: pastikan file foto bukti pengaduan saat ini tersimpan jika belum ada
-        $fallbackFilename = 'wdttruPf7SR91Q7b6W0CUDQNlEmEazqaLjsqJ3b1.jpg';
-        try {
-            $exists = DB::table('product_images')->where('filename', $fallbackFilename)->exists();
-            if (!$exists) {
-                $localPath = storage_path('app/public/complaints/' . $fallbackFilename);
-                if (is_file($localPath)) {
-                    DB::table('product_images')->insert([
-                        'filename'   => $fallbackFilename,
-                        'mime'       => 'image/jpeg',
-                        'data'       => base64_encode(file_get_contents($localPath)),
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                    ]);
-                }
-            }
-        } catch (\Throwable $e) {}
     }
 
     /**

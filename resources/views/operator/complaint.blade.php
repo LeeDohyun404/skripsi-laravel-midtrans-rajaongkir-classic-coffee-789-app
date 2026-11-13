@@ -92,20 +92,13 @@
                 <div>
                     <p style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);margin-bottom:12px;">Foto Bukti</p>
                     @if($complaint->foto)
-                        @php
-                            $fotoSrc = $complaint->foto_url ?? asset('storage/' . $complaint->foto);
-                        @endphp
-                        <div style="position:relative;display:inline-block;max-width:100%;">
-                            <img src="{{ $fotoSrc }}"
-                                alt="Foto Bukti"
-                                style="width:100%;max-width:340px;border-radius:12px;border:1.5px solid var(--slate-200);cursor:pointer;object-fit:cover;box-shadow:var(--shadow-card);"
-                                onclick="window.open('{{ $fotoSrc }}', '_blank')"
-                                title="Klik untuk memperbesar foto">
-                            <span style="display:block;font-size:11px;color:var(--slate-500);margin-top:6px;">🔍 Klik gambar untuk melihat ukuran penuh</span>
-                        </div>
+                        <img src="{{ asset('storage/' . $complaint->foto) }}"
+                            alt="Foto Bukti"
+                            style="width:100%;max-width:320px;border-radius:12px;border:1px solid var(--cream-dark);cursor:pointer;"
+                            onclick="window.open(this.src)">
                     @else
-                        <div style="background:var(--slate-100);border-radius:12px;padding:24px;text-align:center;color:var(--slate-500);font-size:13px;border:1px dashed var(--slate-300);">
-                            📷 Tidak ada foto bukti yang diunggah
+                        <div style="background:var(--cream-dark);border-radius:12px;padding:24px;text-align:center;color:var(--text-muted);font-size:13px;">
+                            📷 Tidak ada foto bukti
                         </div>
                     @endif
                 </div>
