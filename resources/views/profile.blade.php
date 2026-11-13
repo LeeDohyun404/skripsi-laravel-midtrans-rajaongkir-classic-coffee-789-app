@@ -64,15 +64,16 @@
 
         {{-- Foto --}}
         <div class="relative group shrink-0">
-            <div class="w-24 h-24 rounded-full overflow-hidden border-4 border-amber-100 shadow">
+            <div class="w-24 h-24 rounded-full overflow-hidden border-4 border-amber-100 shadow relative bg-stone-100">
                 @if(Auth::user()->avatar)
-                    <img src="{{ Auth::user()->avatar }}" class="w-full h-full object-cover"
+                    <img id="avatar-img-top" src="{{ Auth::user()->avatar }}" class="w-full h-full object-cover"
                          onerror="this.style.display='none'; document.getElementById('avatar-fallback-top').style.display='flex';">
                     <div id="avatar-fallback-top" style="display:none;" class="w-full h-full bg-gradient-to-br from-amber-400 to-amber-700 items-center justify-center">
                         <span class="text-white text-3xl font-bold font-serif">{{ strtoupper(substr(Auth::user()->name,0,1)) }}</span>
                     </div>
                 @else
-                    <div class="w-full h-full bg-gradient-to-br from-amber-400 to-amber-700 flex items-center justify-center">
+                    <img id="avatar-img-top" src="" class="w-full h-full object-cover" style="display:none;">
+                    <div id="avatar-fallback-top" class="w-full h-full bg-gradient-to-br from-amber-400 to-amber-700 flex items-center justify-center">
                         <span class="text-white text-3xl font-bold font-serif">{{ strtoupper(substr(Auth::user()->name,0,1)) }}</span>
                     </div>
                 @endif
@@ -699,7 +700,7 @@
                 <h3 class="font-serif italic text-stone-800 text-xl mb-1">Foto Profil</h3>
                 <p class="text-stone-400 text-xs mb-5">Format JPG, PNG, atau GIF. Maks. 2MB.</p>
                 <div class="flex flex-col sm:flex-row items-center gap-6">
-                    <div class="w-20 h-20 rounded-2xl overflow-hidden border-2 border-stone-100 shadow-sm shrink-0">
+                    <div class="w-20 h-20 rounded-2xl overflow-hidden border-2 border-stone-100 shadow-sm shrink-0 relative bg-stone-100">
                         @if(Auth::user()->avatar)
                             <img src="{{ Auth::user()->avatar }}" id="avatarPreview2" class="w-full h-full object-cover"
                                  onerror="this.style.display='none'; document.getElementById('avatar-fallback-edit').style.display='flex';">
@@ -707,7 +708,8 @@
                                 <span class="text-white text-2xl font-bold">{{ strtoupper(substr(Auth::user()->name,0,1)) }}</span>
                             </div>
                         @else
-                            <div class="w-full h-full bg-gradient-to-br from-amber-400 to-amber-700 flex items-center justify-center">
+                            <img src="" id="avatarPreview2" class="w-full h-full object-cover" style="display:none;">
+                            <div id="avatar-fallback-edit" class="w-full h-full bg-gradient-to-br from-amber-400 to-amber-700 flex items-center justify-center">
                                 <span class="text-white text-2xl font-bold">{{ strtoupper(substr(Auth::user()->name,0,1)) }}</span>
                             </div>
                         @endif
@@ -872,7 +874,12 @@ function previewAvatar(input) {
         const reader = new FileReader();
         reader.onload = e => {
             const p = document.getElementById('avatarPreview2');
-            if (p) p.src = e.target.result;
+            if (p) {
+                p.src = e.target.result;
+                p.style.display = 'block';
+                const fb = document.getElementById('avatar-fallback-edit');
+                if (fb) fb.style.display = 'none';
+            }
         };
         reader.readAsDataURL(input.files[0]);
     }
@@ -886,10 +893,26 @@ function compressAndSubmitAvatar(input, formId) {
     if (!input.files || !input.files[0]) return;
     const file = input.files[0];
     const fname = document.getElementById('avatarFileName');
-    if (fname) fname.textContent = 'Memproses...';
+    if (fname) fname.textContent = 'Memproses foto...';
 
     const reader = new FileReader();
     reader.onload = function(e) {
+        // Tampilkan preview instan ke user saat itu juga!
+        const p2 = document.getElementById('avatarPreview2');
+        if (p2) {
+            p2.src = e.target.result;
+            p2.style.display = 'block';
+            const fb2 = document.getElementById('avatar-fallback-edit');
+            if (fb2) fb2.style.display = 'none';
+        }
+        const topImg = document.getElementById('avatar-img-top');
+        if (topImg) {
+            topImg.src = e.target.result;
+            topImg.style.display = 'block';
+            const topFb = document.getElementById('avatar-fallback-top');
+            if (topFb) topFb.style.display = 'none';
+        }
+
         const img = new Image();
         img.onload = function() {
             const MAX = 800;
@@ -907,7 +930,7 @@ function compressAndSubmitAvatar(input, formId) {
             // Kirim via fetch JSON agar tidak terkena limit upload file PHP
             const form = document.getElementById(formId);
             const csrf = form.querySelector('[name="_token"]').value;
-            if (fname) fname.textContent = 'Mengunggah...';
+            if (fname) fname.textContent = 'Mengunggah ke server...';
 
             fetch('{{ route("profile.avatar") }}', {
                 method: 'POST',
@@ -921,17 +944,11 @@ function compressAndSubmitAvatar(input, formId) {
             .then(r => r.json())
             .then(data => {
                 if (data.url) {
-                    // Update semua img avatar di halaman tanpa reload
-                    document.querySelectorAll('img[src*="foto-avatar"], img[src*="lh3.google"]').forEach(el => {
-                        el.src = data.url + '?t=' + Date.now();
-                        el.style.display = '';
-                    });
-                    // Hide fallback circles
-                    ['avatar-fallback-top','avatar-fallback-edit'].forEach(id => {
-                        const el = document.getElementById(id);
-                        if (el) el.style.display = 'none';
-                    });
-                    if (fname) fname.textContent = 'Foto berhasil diupload!';
+                    if (fname) fname.textContent = 'Foto berhasil disimpan!';
+                    // Tunggu sebentar lalu reload agar sinkron ke header
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 500);
                 } else {
                     if (fname) fname.textContent = data.error || 'Gagal upload';
                     alert(data.error || 'Upload gagal, coba lagi.');

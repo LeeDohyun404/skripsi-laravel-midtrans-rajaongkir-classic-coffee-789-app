@@ -145,7 +145,7 @@ class ProfileController extends Controller
                 $filename = 'av-' . time() . '-' . bin2hex(random_bytes(3)) . '.jpg';
                 \App\Http\Controllers\ProductImageController::simpanRaw($filename, 'image/jpeg', $binaryData);
 
-                $avatarUrl = url('/foto-avatar/' . $filename);
+                $avatarUrl = url('/foto-avatar') . '?f=' . $filename;
                 $user->update(['avatar' => $avatarUrl]);
 
                 return response()->json(['url' => $avatarUrl]);
@@ -167,7 +167,7 @@ class ProfileController extends Controller
             $file->storeAs('avatars', $filename, 'public');
         } catch (\Throwable $e) {}
 
-        $avatarUrl = url('/foto-avatar/' . $filename);
+        $avatarUrl = url('/foto-avatar') . '?f=' . $filename;
         $user->update(['avatar' => $avatarUrl]);
 
         return back()->with('success', 'Foto profil berhasil diperbarui.');

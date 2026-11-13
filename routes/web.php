@@ -31,6 +31,7 @@ Route::post('/api/ongkir', [RajaOngkirController::class, 'getCost']);
 Route::get('/images/{filename}', [ProductImageController::class, 'show'])->where('filename', '[A-Za-z0-9._-]+');
 Route::get('/foto-produk', [ProductImageController::class, 'showQuery']);
 Route::get('/storage/avatars/{filename}', [ProductImageController::class, 'show'])->where('filename', '[A-Za-z0-9._-]+');
+Route::get('/foto-avatar', [ProductImageController::class, 'showQuery']);
 Route::get('/foto-avatar/{filename}', [ProductImageController::class, 'show'])->where('filename', '[A-Za-z0-9._-]+');
 
 // DEBUG SEMENTARA — cek avatar user di DB (hapus setelah fix terverifikasi)
@@ -53,7 +54,7 @@ Route::get('/debug-avatar', function () {
     }
     // Cek data di DB valid atau tidak
     $latestFile = \Illuminate\Support\Facades\DB::table('product_images')
-        ->orderByDesc('id')->first(['id','filename','mime']);
+        ->orderByDesc('id')->first(['id','filename','mime','data']);
     $dataOk = null;
     if ($latestFile) {
         $decoded = base64_decode($latestFile->data ?? '', true);
@@ -70,7 +71,7 @@ Route::get('/debug-avatar', function () {
         'test_download'  => $testDownload,
         'latest_file'    => $latestFile ? ['id' => $latestFile->id, 'filename' => $latestFile->filename, 'mime' => $latestFile->mime] : null,
         'latest_data_ok' => $dataOk,
-        'direct_url'     => $latestFile ? url('/foto-avatar/' . $latestFile->filename) : null,
+        'direct_url'     => $latestFile ? (url('/foto-avatar') . '?f=' . $latestFile->filename) : null,
         'recent_images'  => $inDb,
     ]);
 });

@@ -135,7 +135,7 @@ class GoogleAuthController extends Controller
                 'updated_at' => now(),
             ]);
 
-            return url('/foto-avatar/' . $filename);
+            return url('/foto-avatar') . '?f=' . $filename;
         } catch (\Throwable $e) {
             Log::warning('GoogleAuthController: gagal download avatar: ' . $e->getMessage());
             return null;
