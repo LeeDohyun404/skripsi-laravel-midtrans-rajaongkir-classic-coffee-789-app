@@ -64,24 +64,35 @@ class ProductImageController extends Controller
     /** Dipakai kalau file tidak ada di public/images (mis. hilang setelah deploy). */
     public function show(string $filename)
     {
+        // 1. Cek disk public/images
         $path = public_path('images/' . $filename);
         if (is_file($path)) {
             return response()->file($path);
         }
 
+        // 2. Cek storage avatars
         $avatarPath = storage_path('app/public/avatars/' . $filename);
         if (is_file($avatarPath)) {
             return response()->file($avatarPath);
         }
 
-        if (Schema::hasTable('product_images')) {
-            $img = DB::table('product_images')->where('filename', $filename)->first();
-            if ($img) {
-                return response(base64_decode($img->data), 200, [
-                    'Content-Type'  => $img->mime,
-                    'Cache-Control' => 'public, max-age=86400',
-                ]);
+        // 3. Ambil dari DB — langsung query tanpa Schema::hasTable (lebih andal di Wasmer WASM)
+        try {
+            $img = DB::table('product_images')
+                ->where('filename', $filename)
+                ->first();
+
+            if ($img && !empty($img->data)) {
+                $decoded = base64_decode($img->data, true);
+                if ($decoded && strlen($decoded) > 10) {
+                    return response($decoded, 200, [
+                        'Content-Type'  => $img->mime ?: 'image/jpeg',
+                        'Cache-Control' => 'public, max-age=86400',
+                    ]);
+                }
             }
+        } catch (\Throwable $e) {
+            // DB error — fall through to 404
         }
 
         abort(404);

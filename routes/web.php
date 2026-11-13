@@ -51,6 +51,16 @@ Route::get('/debug-avatar', function () {
             $user->update(['avatar' => $proxied]);
         }
     }
+    // Cek data di DB valid atau tidak
+    $latestFile = \Illuminate\Support\Facades\DB::table('product_images')
+        ->orderByDesc('id')->first(['id','filename','mime']);
+    $dataOk = null;
+    if ($latestFile) {
+        $decoded = base64_decode($latestFile->data ?? '', true);
+        $dataOk = ($decoded && strlen($decoded) > 10)
+            ? 'valid (' . strlen($decoded) . ' bytes)'
+            : 'INVALID or empty';
+    }
     return response()->json([
         'user_id'        => $user->id,
         'name'           => $user->name,
@@ -58,6 +68,9 @@ Route::get('/debug-avatar', function () {
         'google_id'      => $user->google_id ? 'set' : 'null',
         'curl_available' => $curlOk,
         'test_download'  => $testDownload,
+        'latest_file'    => $latestFile ? ['id' => $latestFile->id, 'filename' => $latestFile->filename, 'mime' => $latestFile->mime] : null,
+        'latest_data_ok' => $dataOk,
+        'direct_url'     => $latestFile ? url('/foto-avatar/' . $latestFile->filename) : null,
         'recent_images'  => $inDb,
     ]);
 });
