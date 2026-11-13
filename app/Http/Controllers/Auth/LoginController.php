@@ -16,7 +16,7 @@ class LoginController extends Controller
      *
      * @var string
      */
-    protected $redirectTo = '/home';
+    protected $redirectTo = '/produk';
 
     /**
      * Create a new controller instance.
@@ -30,14 +30,30 @@ class LoginController extends Controller
     }
 
     /**
+     * Pastikan format email bersih dari spasi dan huruf kapital tidak sengaja
+     */
+    protected function credentials(Request $request)
+    {
+        return [
+            'email' => strtolower(trim((string) $request->email)),
+            'password' => (string) $request->password,
+        ];
+    }
+
+    /**
      * Blokir user yang belum verifikasi email (termasuk email fiktif)
      */
     protected function authenticated(Request $request, $user)
     {
         if ($user instanceof \Illuminate\Contracts\Auth\MustVerifyEmail && ! $user->hasVerifiedEmail()) {
+            try {
+                $user->sendEmailVerificationNotification();
+            } catch (\Throwable $e) {}
+
             Auth::logout();
-            return redirect()->route('login')->with('error', 'Login gagal! Email ini belum diverifikasi. Email fiktif atau email yang belum dikonfirmasi tidak dapat digunakan untuk login. Silakan cek inbox atau folder spam email Anda.');
+            return redirect()->route('login')->with('error', 'Login gagal! Akun Anda belum aktif karena email belum diverifikasi. Kami telah mengirimkan ulang link verifikasi ke ' . $user->email . '. Silakan buka email Anda dan klik tombol verifikasi.');
         }
     }
 }
+
 

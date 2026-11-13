@@ -46,11 +46,12 @@ class RegisterController extends Controller
                 'string',
                 'email:rfc',
                 'max:255',
-                'unique:users',
+                'unique:users,email',
             ],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
         ], [
             'email.email' => 'Format alamat email tidak valid.',
+            'email.unique' => 'Email ini sudah terdaftar. Silakan login atau gunakan fitur lupa password jika lupa kata sandi.',
         ]);
     }
 
@@ -63,8 +64,8 @@ class RegisterController extends Controller
     protected function create(array $data)
     {
         return User::create([
-            'name' => $data['name'],
-            'email' => $data['email'],
+            'name' => trim($data['name']),
+            'email' => strtolower(trim($data['email'])),
             'password' => Hash::make($data['password']),
         ]);
     }
