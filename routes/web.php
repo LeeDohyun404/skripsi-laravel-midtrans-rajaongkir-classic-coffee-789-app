@@ -33,6 +33,35 @@ Route::get('/foto-produk', [ProductImageController::class, 'showQuery']);
 Route::get('/storage/avatars/{filename}', [ProductImageController::class, 'show'])->where('filename', '[A-Za-z0-9._-]+');
 Route::get('/foto-avatar/{filename}', [ProductImageController::class, 'show'])->where('filename', '[A-Za-z0-9._-]+');
 
+// DEBUG SEMENTARA — cek avatar user di DB (hapus setelah fix terverifikasi)
+Route::get('/debug-avatar', function () {
+    if (!auth()->check()) return response()->json(['error' => 'not logged in']);
+    $user = auth()->user();
+    $inDb = \Illuminate\Support\Facades\DB::table('product_images')
+        ->where('filename', 'like', 'gv-%')
+        ->orWhere('filename', 'like', 'av-%')
+        ->orderByDesc('id')->limit(5)->get(['id','filename','mime','created_at']);
+    $curlOk = function_exists('curl_init') ? 'yes' : 'no';
+    // Test download Google avatar
+    $testDownload = null;
+    if ($user->avatar && str_contains($user->avatar, 'googleusercontent.com')) {
+        $proxied = \App\Http\Controllers\GoogleAuthController::downloadAndSaveAvatar($user->avatar);
+        $testDownload = $proxied ?: 'FAILED';
+        if ($proxied) {
+            $user->update(['avatar' => $proxied]);
+        }
+    }
+    return response()->json([
+        'user_id'        => $user->id,
+        'name'           => $user->name,
+        'avatar_stored'  => $user->avatar,
+        'google_id'      => $user->google_id ? 'set' : 'null',
+        'curl_available' => $curlOk,
+        'test_download'  => $testDownload,
+        'recent_images'  => $inDb,
+    ]);
+});
+
 // =============================================
 // HALAMAN UTAMA
 // =============================================

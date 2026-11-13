@@ -20,6 +20,20 @@ class ProfileController extends Controller
     {
         $user = Auth::user();
 
+        // ── Auto-proxy avatar Google ke DB kita (jika masih URL lh3.google) ──
+        // Ini memperbaiki avatar tanpa perlu logout/login ulang
+        if ($user->avatar && (str_contains($user->avatar, 'googleusercontent.com') || str_contains($user->avatar, 'lh3.google'))) {
+            try {
+                $proxied = \App\Http\Controllers\GoogleAuthController::downloadAndSaveAvatar($user->avatar);
+                if ($proxied) {
+                    $user->update(['avatar' => $proxied]);
+                    $user->refresh();
+                }
+            } catch (\Throwable $e) {
+                // Gagal proxy = tetap pakai URL Google, tidak masalah
+            }
+        }
+
         // ── Statistik pesanan ──────────────────────────────
         $orders = Order::where('customer_email', $user->email)
                        ->with(['items', 'trackings'])

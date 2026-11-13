@@ -75,25 +75,46 @@ class GoogleAuthController extends Controller
      * Download avatar dari URL Google dan simpan ke tabel product_images.
      * Kembalikan URL lokal /foto-avatar/{filename}, atau null jika gagal.
      */
-    private static function downloadAndSaveAvatar(string $url): ?string
+    public static function downloadAndSaveAvatar(string $url): ?string
     {
         try {
             // Tambah parameter =s200 untuk ukuran yang lebih kecil
-            $url = preg_replace('/=s\d+$/', '', $url) . '=s200';
+            $baseUrl = preg_replace('/=s\d+(-c)?$/', '', $url);
+            $fetchUrl = $baseUrl . '=s200-c';
 
-            $context = stream_context_create(['http' => [
-                'timeout'          => 8,
-                'follow_location'  => true,
-                'user_agent'       => 'Mozilla/5.0 (compatible; Classic789Bot/1.0)',
-            ]]);
-            $data = @file_get_contents($url, false, $context);
-            if (!$data) return null;
+            // Coba dengan curl dulu (lebih andal di Wasmer)
+            $data = null;
+            if (function_exists('curl_init')) {
+                $ch = curl_init($fetchUrl);
+                curl_setopt_array($ch, [
+                    CURLOPT_RETURNTRANSFER => true,
+                    CURLOPT_TIMEOUT        => 10,
+                    CURLOPT_FOLLOWLOCATION => true,
+                    CURLOPT_USERAGENT      => 'Mozilla/5.0 (compatible; Classic789Bot/1.0)',
+                    CURLOPT_SSL_VERIFYPEER => false,
+                ]);
+                $data = curl_exec($ch);
+                $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                curl_close($ch);
+                if (!$data || $httpCode !== 200) $data = null;
+            }
+
+            // Fallback ke file_get_contents
+            if (!$data) {
+                $context = stream_context_create(['http' => [
+                    'timeout'         => 8,
+                    'follow_location' => true,
+                    'user_agent'      => 'Mozilla/5.0 (compatible; Classic789Bot/1.0)',
+                ]]);
+                $data = @file_get_contents($fetchUrl, false, $context);
+            }
+
+            if (!$data || strlen($data) < 100) return null;
 
             $mime = 'image/jpeg';
-            // Deteksi mime dari bytes
             if (str_starts_with($data, "\x89PNG")) $mime = 'image/png';
             elseif (str_starts_with($data, "GIF")) $mime = 'image/gif';
-            $ext  = match ($mime) { 'image/png' => 'png', 'image/gif' => 'gif', default => 'jpg' };
+            $ext = match ($mime) { 'image/png' => 'png', 'image/gif' => 'gif', default => 'jpg' };
 
             if (!Schema::hasTable('product_images')) {
                 Schema::create('product_images', function ($table) {
